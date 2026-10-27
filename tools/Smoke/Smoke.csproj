@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><TargetFramework>net6.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AssemblyName>Archeo.Smoke</AssemblyName></PropertyGroup>
+ <ItemGroup>
+  <Reference Include="Archeo" HintPath="../../bin/Release/net6.0/Archeo.dll" Private="false" />
+  <Reference Include="Stardew Valley" HintPath="D:\Games\Steam\steamapps\common\Stardew Valley\Stardew Valley.dll" Private="false" />
+  <Reference Include="StardewValley.GameData" HintPath="D:\Games\Steam\steamapps\common\Stardew Valley\StardewValley.GameData.dll" Private="false" />
+  <Reference Include="MonoGame.Framework" HintPath="D:\Games\Steam\steamapps\common\Stardew Valley\MonoGame.Framework.dll" Private="false" />
+  <Reference Include="xTile" HintPath="D:\Games\Steam\steamapps\common\Stardew Valley\xTile.dll" Private="false" />
+  <Reference Include="StardewModdingAPI" HintPath="D:\Games\Steam\steamapps\common\Stardew Valley\StardewModdingAPI.dll" Private="false" />
+  <Reference Include="SMAPI.Toolkit.CoreInterfaces" HintPath="D:\Games\Steam\steamapps\common\Stardew Valley\smapi-internal\SMAPI.Toolkit.CoreInterfaces.dll" Private="false" />
+ </ItemGroup>
+</Project>

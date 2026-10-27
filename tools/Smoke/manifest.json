@@ -1,0 +1,6 @@
+{
+ "Name":"Archeo isolated smoke tests", "Author":"Archeo", "Version":"1.0.0",
+ "Description":"Temporary QA harness. Creates an unsaved world, tests archaeology, and exits.",
+ "UniqueID":"Archeo.Smoke", "EntryDll":"Archeo.Smoke.dll", "MinimumApiVersion":"4.1.0",
+ "Dependencies":[{"UniqueID":"Archeo.SecretsOfTheValley","IsRequired":true}]
+}

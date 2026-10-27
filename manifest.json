@@ -1,0 +1,11 @@
+{
+  "Name": "Archeo - Secrets of the Valley",
+  "Author": "Archeo",
+  "Version": "1.0.0",
+  "Description": "Discover 33 artifacts, explore weather and natural-event dig sites, uncover villagers' stories, use ancient relics, track field objectives, and build a personal museum.",
+  "UniqueID": "Archeo.SecretsOfTheValley",
+  "EntryDll": "Archeo.dll",
+  "MinimumApiVersion": "4.1.0",
+  "MinimumGameVersion": "1.6.14",
+  "UpdateKeys": []
+}

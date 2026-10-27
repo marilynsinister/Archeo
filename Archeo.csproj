@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Archeo</AssemblyName>
+    <Version>1.0.0</Version>
+    <EnableHarmony>true</EnableHarmony>
+    <EnableModDeploy>false</EnableModDeploy>
+    <EnableModZip>false</EnableModZip>
+    <GamePath Condition="'$(GamePath)' == ''">D:\Games\Steam\steamapps\common\Stardew Valley</GamePath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" />
+    <Compile Remove="tools/**/*.cs;tests/**/*.cs" />
+    <None Update="manifest.json;assets/**/*;i18n/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

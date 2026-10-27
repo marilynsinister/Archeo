@@ -1,0 +1,332 @@
+[
+  {
+    "Id": "settler_cup",
+    "Culture": "valley",
+    "Rarity": 0,
+    "Cost": 20,
+    "Price": 140,
+    "Sprite": 0,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "copper_brooch",
+    "Culture": "valley",
+    "Rarity": 0,
+    "Cost": 24,
+    "Price": 180,
+    "Sprite": 1,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "keeper_lantern",
+    "Culture": "valley",
+    "Rarity": 1,
+    "Cost": 30,
+    "Price": 320,
+    "Sprite": 2,
+    "Effect": "lamp",
+    "Source": "research"
+  },
+  {
+    "Id": "herbalist_flask",
+    "Culture": "valley",
+    "Rarity": 2,
+    "Cost": 45,
+    "Price": 650,
+    "Sprite": 3,
+    "Effect": "energy",
+    "Source": "research"
+  },
+  {
+    "Id": "harvest_seal",
+    "Culture": "valley",
+    "Rarity": 2,
+    "Cost": 50,
+    "Price": 750,
+    "Sprite": 4,
+    "Effect": "fragments",
+    "Source": "research"
+  },
+  {
+    "Id": "memory_musicbox",
+    "Culture": "valley",
+    "Rarity": 3,
+    "Cost": 70,
+    "Price": 1400,
+    "Sprite": 5,
+    "Effect": "heal",
+    "Source": "research"
+  },
+  {
+    "Id": "forest_heart",
+    "Culture": "valley",
+    "Rarity": 4,
+    "Cost": 100,
+    "Price": 3000,
+    "Sprite": 6,
+    "Effect": "lamp",
+    "Source": "research"
+  },
+  {
+    "Id": "brass_gear",
+    "Culture": "dwarf",
+    "Rarity": 0,
+    "Cost": 20,
+    "Price": 150,
+    "Sprite": 7,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "rune_tablet",
+    "Culture": "dwarf",
+    "Rarity": 0,
+    "Cost": 25,
+    "Price": 190,
+    "Sprite": 8,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "miner_goblet",
+    "Culture": "dwarf",
+    "Rarity": 1,
+    "Cost": 32,
+    "Price": 360,
+    "Sprite": 9,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "dwarf_thermos",
+    "Culture": "dwarf",
+    "Rarity": 2,
+    "Cost": 45,
+    "Price": 700,
+    "Sprite": 10,
+    "Effect": "coffee",
+    "Source": "research"
+  },
+  {
+    "Id": "resonant_lens",
+    "Culture": "dwarf",
+    "Rarity": 2,
+    "Cost": 50,
+    "Price": 800,
+    "Sprite": 11,
+    "Effect": "survey",
+    "Source": "research"
+  },
+  {
+    "Id": "clockwork_mole",
+    "Culture": "dwarf",
+    "Rarity": 3,
+    "Cost": 75,
+    "Price": 1600,
+    "Sprite": 12,
+    "Effect": "survey",
+    "Source": "research"
+  },
+  {
+    "Id": "mountain_heart",
+    "Culture": "dwarf",
+    "Rarity": 4,
+    "Cost": 105,
+    "Price": 3400,
+    "Sprite": 13,
+    "Effect": "fragments",
+    "Source": "research"
+  },
+  {
+    "Id": "clay_whistle",
+    "Culture": "sea",
+    "Rarity": 0,
+    "Cost": 20,
+    "Price": 140,
+    "Sprite": 14,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "sailor_buckle",
+    "Culture": "sea",
+    "Rarity": 0,
+    "Cost": 24,
+    "Price": 180,
+    "Sprite": 15,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "shell_comb",
+    "Culture": "sea",
+    "Rarity": 1,
+    "Cost": 30,
+    "Price": 330,
+    "Sprite": 16,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "tide_compass",
+    "Culture": "sea",
+    "Rarity": 2,
+    "Cost": 45,
+    "Price": 700,
+    "Sprite": 17,
+    "Effect": "compass",
+    "Source": "research"
+  },
+  {
+    "Id": "pearl_casket",
+    "Culture": "sea",
+    "Rarity": 2,
+    "Cost": 52,
+    "Price": 850,
+    "Sprite": 18,
+    "Effect": "pearl",
+    "Source": "research"
+  },
+  {
+    "Id": "moon_shell",
+    "Culture": "sea",
+    "Rarity": 3,
+    "Cost": 72,
+    "Price": 1500,
+    "Sprite": 19,
+    "Effect": "energy",
+    "Source": "research"
+  },
+  {
+    "Id": "abyss_beacon",
+    "Culture": "sea",
+    "Rarity": 4,
+    "Cost": 100,
+    "Price": 3200,
+    "Sprite": 20,
+    "Effect": "survey",
+    "Source": "research"
+  },
+  {
+    "Id": "rain_pitcher",
+    "Culture": "valley",
+    "Rarity": 2,
+    "Cost": 1,
+    "Price": 700,
+    "Sprite": 24,
+    "Effect": "water",
+    "Source": "rain"
+  },
+  {
+    "Id": "storm_fork",
+    "Culture": "dwarf",
+    "Rarity": 3,
+    "Cost": 1,
+    "Price": 1300,
+    "Sprite": 25,
+    "Effect": "resonance",
+    "Source": "storm"
+  },
+  {
+    "Id": "past_lens",
+    "Culture": "dwarf",
+    "Rarity": 2,
+    "Cost": 58,
+    "Price": 950,
+    "Sprite": 26,
+    "Effect": "past",
+    "Source": "research"
+  },
+  {
+    "Id": "garden_flute",
+    "Culture": "valley",
+    "Rarity": 3,
+    "Cost": 78,
+    "Price": 1600,
+    "Sprite": 27,
+    "Effect": "garden",
+    "Source": "research"
+  },
+  {
+    "Id": "keeper_hourglass",
+    "Culture": "dwarf",
+    "Rarity": 3,
+    "Cost": 80,
+    "Price": 1700,
+    "Sprite": 28,
+    "Effect": "hourglass",
+    "Source": "research"
+  },
+  {
+    "Id": "pocket_observatory",
+    "Culture": "sea",
+    "Rarity": 3,
+    "Cost": 88,
+    "Price": 1850,
+    "Sprite": 29,
+    "Effect": "stars",
+    "Source": "research"
+  },
+  {
+    "Id": "frozen_leaf",
+    "Culture": "valley",
+    "Rarity": 2,
+    "Cost": 1,
+    "Price": 700,
+    "Sprite": 30,
+    "Effect": "",
+    "Source": "snow"
+  },
+  {
+    "Id": "tide_calendar",
+    "Culture": "sea",
+    "Rarity": 2,
+    "Cost": 1,
+    "Price": 850,
+    "Sprite": 31,
+    "Effect": "",
+    "Source": "season"
+  },
+  {
+    "Id": "star_glass",
+    "Culture": "dwarf",
+    "Rarity": 3,
+    "Cost": 1,
+    "Price": 1600,
+    "Sprite": 32,
+    "Effect": "",
+    "Source": "meteor"
+  },
+  {
+    "Id": "reader_seal",
+    "Culture": "dwarf",
+    "Rarity": 2,
+    "Cost": 1,
+    "Price": 1100,
+    "Sprite": 33,
+    "Effect": "fragments",
+    "Source": "penny"
+  },
+  {
+    "Id": "garden_locket",
+    "Culture": "valley",
+    "Rarity": 2,
+    "Cost": 1,
+    "Price": 1100,
+    "Sprite": 34,
+    "Effect": "energy",
+    "Source": "evelyn"
+  },
+  {
+    "Id": "harbor_whistle",
+    "Culture": "sea",
+    "Rarity": 2,
+    "Cost": 1,
+    "Price": 1100,
+    "Sprite": 35,
+    "Effect": "compass",
+    "Source": "willy"
+  }
+]

@@ -1,0 +1,9 @@
+bin/
+obj/
+.work/
+dist/
+**/bin/
+**/obj/
+config.json
+*.user
+__pycache__/
