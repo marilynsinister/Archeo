@@ -99,9 +99,11 @@ public sealed partial class ModEntry
         else
         {
             if (!ResidentStories.Share(State.Residents,id,true)) return;
-            Game1.player.changeFriendship(ResidentStories.Friendship,npc);
-            State.Experience += ResidentStories.Experience;
-            Notify(T("residents.shared",new { name = ResidentName(story), friendship = ResidentStories.Friendship, experience = ResidentStories.Experience }));
+            int friendship = Mastery.HistoryReward(State, ResidentStories.Friendship);
+            int experience = Mastery.HistoryReward(State, ResidentStories.Experience);
+            Game1.player.changeFriendship(friendship,npc);
+            State.Experience += experience;
+            Notify(T("residents.shared",new { name = ResidentName(story), friendship, experience }));
         }
         SaveState();
         // A standalone portrait dialogue leaves the resident's normal dialogue stack and schedule intact.

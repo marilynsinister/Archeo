@@ -14,6 +14,12 @@ public sealed partial class ModEntry
         bool used = true;
         switch (artifact.Effect)
         {
+            case "sunstep":
+            case "oasis":
+            case "shellguard":
+            case "tidecall":
+                if(!UseFrontierRelic(artifact))return;
+                break;
             case "past":
                 if (!UsePastLens()) return;
                 break;
@@ -41,6 +47,7 @@ public sealed partial class ModEntry
                 var found = FindSurveyTarget(Game1.currentLocation);
                 if (found == null) { Notify(T("relic.travel")); return; }
                 var (site, point) = found.Value;
+                point.Revealed = true;
                 signals.Value = new SurveySignal { Location = site.Location, SiteKey = site.Key, Target = new(point.X, point.Y), Revealed = true, Until = Game1.currentGameTime.TotalGameTime.TotalSeconds + 180 };
                 Notify(T("relic.reveal"));
                 break;

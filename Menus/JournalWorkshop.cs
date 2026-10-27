@@ -45,13 +45,17 @@ internal sealed partial class JournalMenu
             }
             textTop += 70;
         }
-        var lines = Wrap(mod.T("workshop.text." + stage), w).ToList();
+        string content = mod.T("workshop.text." + stage);
+        if (story.Stage == WorkshopStage.Components)
+            foreach (string part in Workshop.Parts.Where(p => !story.Parts.Contains(p)))
+                content += "\n\n" + mod.T("catalog.part." + part);
+        var lines = Wrap(content, w).ToList();
         int lineH = (int)(StardewValley.Game1.smallFont.LineSpacing * fontScale);
         int visible = Math.Max(1, (bottom - textTop) / lineH);
         maxScroll = Math.Max(0, lines.Count - visible);
         scroll = Math.Clamp(scroll, 0, maxScroll);
         for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], x, textTop + (i - scroll) * lineH);
-        if (maxScroll > scroll) Text(b, "↓", right.Right - 24, bottom - 12, Muted);
+        if (maxScroll > scroll) Text(b, "v", right.Right - 24, bottom - 12, Muted);
         string? action = stage switch { 1 => "study", 2 => "consult", 4 => "repair", _ => null };
         if (action != null)
         {

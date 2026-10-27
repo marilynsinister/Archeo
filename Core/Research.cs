@@ -3,7 +3,7 @@ namespace Archeo.Core;
 /// <summary>Deterministic progression, shared by the mod and the offline tests.</summary>
 public sealed class Research
 {
-    public static readonly string[] Cultures = { "valley", "dwarf", "sea" };
+    public static readonly string[] Cultures = { "valley", "dwarf", "sea", "calico", "island" };
     public IReadOnlyList<ArtifactDefinition> Artifacts { get; }
 
     public Research(IEnumerable<ArtifactDefinition> artifacts)
@@ -23,7 +23,7 @@ public sealed class Research
             || state.LastUse == null || state.Sites == null || state.VanillaSpots == null || !Workshop.IsValid(state.Workshop) || !WeatherExpeditions.IsValid(state.Weather)
             || state.CollectionRewards == null || state.CollectionRewards.Any(id => !MuseumCollections.All.Any(p => p.Id == id)) || !Shipwreck.IsValid(state.Shipwreck)
             || !UnusualRelics.IsValid(state.Stars) || !NaturalEvents.IsValid(state.Nature) || !ResidentStories.IsValid(state.Residents)
-            || state.TrackedObjective == null || state.TrackedObjective.Length > 2048)
+            || state.TrackedObjective == null || state.TrackedObjective.Length > 2048 || !Mastery.IsValid(state.Mastery, state.Experience) || !Journey.IsValid(state.Journey) || state.Frontiers == null || !LivingMuseum.IsValid(state.Museum))
             throw new InvalidDataException("Unsupported or incomplete archaeology save; preserve original data.");
         if (state.Experience < 0 || state.Finds < 0 || state.Restored.Any(p => p.Value < 1)
             || state.Cultures.Any(p => p.Value == null || p.Value.Fragments < 0 || p.Value.Keystones < 0 || p.Value.Solves < 0 || p.Value.SinceRare < 0)
@@ -84,14 +84,14 @@ public sealed class Research
         return pool[^1];
     }
 
-    public static int Required(ArtifactDefinition artifact, CultureProgress progress, bool useKeystone)
-        => Math.Max(1, artifact.Cost - (useKeystone && progress.Keystones > 0 ? 12 : 0));
+    public static int Required(ArtifactDefinition artifact, CultureProgress progress, bool useKeystone, ArchaeologyState? state = null)
+        => Math.Max(1, Mastery.RestorationCost(state, artifact.Cost) - (useKeystone && progress.Keystones > 0 ? 12 : 0));
 
     public bool Restore(ArchaeologyState state, string culture, bool useKeystone, Random random, out ArtifactDefinition artifact)
     {
         artifact = Project(state, culture, random);
         var progress = Progress(state, culture);
-        int cost = Required(artifact, progress, useKeystone);
+        int cost = Required(artifact, progress, useKeystone, state);
         if (progress.Fragments < cost) return false;
         progress.Fragments -= cost;
         if (useKeystone && progress.Keystones > 0) progress.Keystones--;

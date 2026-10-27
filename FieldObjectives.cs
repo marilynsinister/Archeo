@@ -7,7 +7,9 @@ namespace Archeo;
 
 public sealed partial class ModEntry
 {
-    internal List<FieldObjective> FieldObjectives() => FieldJournal.Build(State,Research.Artifacts,Today,Config.EnableWeatherEvents,Config.EnableNatureEvents);
+    internal List<FieldObjective> FieldObjectives() => FieldJournal.Build(State,Research.Artifacts,Today,Config.EnableWeatherEvents,Config.EnableNatureEvents)
+        .Where(p => State.Journey.Started && (p.Culture == "" || Core.Journey.IsOpen(State, p.Culture))
+            && (p.Tab == "overview" || Core.Journey.IsOpen(State, p.Tab))).ToList();
 
     internal string ObjectiveArtifact(FieldObjective goal)
     {
@@ -36,7 +38,7 @@ public sealed partial class ModEntry
         return resident != null ? T("residents.site."+resident.Id) : Core.Research.Cultures.Contains(goal.Culture) ? CultureName(goal.Culture) : T("journal.expeditions");
     }
 
-    internal string ObjectiveTitle(FieldObjective goal) => goal.Kind switch
+    internal string ObjectiveTitle(FieldObjective goal) => goal.Topic.StartsWith("museum_") ? T("museum.goal."+goal.Topic[7..],new{name=goal.Artifact.Length>0?T("museum.furniture."+goal.Artifact):""}) : goal.Kind switch
     {
         ObjectiveKind.Reward => T("field.title.reward",new { name = ObjectiveArtifact(goal) }),
         ObjectiveKind.Dig => ObjectiveTopic(goal),
@@ -49,6 +51,8 @@ public sealed partial class ModEntry
 
     internal string ObjectiveStatus(FieldObjective goal)
     {
+        if(goal.Topic=="museum_show")return T(goal.Kind==ObjectiveKind.Reward?"museum.show-ready":"museum.goal-status.show",new{count=goal.Remaining});
+        if(goal.Topic=="museum_order")return T("museum.goal-status.order",new{days=goal.Expires-Today+1});
         if (goal.Kind == ObjectiveKind.Dig)
             return T(goal.Expires == int.MaxValue ? "field.status.permanent" : "field.status.dig",
                 new { location = ObjectiveLocation(goal), count = goal.Remaining, days = goal.Expires == int.MaxValue ? 0 : goal.Expires-Today+1 });

@@ -94,7 +94,7 @@ public sealed partial class ModEntry
                 if (action == "repair")
                 {
                     Workshop.Repair(story, AtWorkshopHome, wood, copper, true);
-                    State.Experience += 180;
+                    State.Experience += Mastery.HistoryReward(State,180);
                     Game1.playSound("reward");
                     SaveState();
                     Game1.drawObjectDialogue(T("workshop.dialogue.complete"));

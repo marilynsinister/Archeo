@@ -40,7 +40,7 @@ internal sealed partial class JournalMenu
         Button(b,"field:prev",mod.T("unusual.page-prev"),new Rectangle(left.X+8,pageY,buttonW,30),page>0);
         Button(b,"field:next",mod.T("unusual.page-next"),new Rectangle(left.Right-buttonW-8,pageY,buttonW,30),page+1<pages);
         Center(b,mod.T("unusual.page",new { page=page+1,pages }),new Rectangle(left.X+buttonW+12,pageY,left.Width-buttonW*2-24,30),Muted,fontScale*.75f);
-        Button(b,"tools",mod.T("journal.tools"),new Rectangle(left.X+8,left.Y+layout.ToolsY,left.Width-16,36));
+        Button(b,"book:equipment",mod.T("journey.equipment-title"),new Rectangle(left.X+8,left.Y+layout.ToolsY,left.Width-16,36));
 
         var current = goals.FirstOrDefault(p => p.Id == objectiveSelection);
         bool guide = overviewGuide || current == null;
@@ -67,7 +67,7 @@ internal sealed partial class JournalMenu
         maxScroll=Math.Max(0,lines.Count-visible);
         scroll=Math.Clamp(scroll,0,maxScroll);
         for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++) Text(b,lines[i],x,top+(i-scroll)*lineH);
-        if(maxScroll>0) Text(b,(scroll>0?"↑ ":"")+(scroll<maxScroll?"↓":""),right.Right-24,bottom-16,Muted,.65f);
+        if(maxScroll>0) Text(b,(scroll>0?"^ ":"")+(scroll<maxScroll?"v":""),right.Right-24,bottom-16,Muted,.65f);
         if(!guide)
         {
             if(current!.Tab!="overview") Button(b,"field:open",mod.T("field.open"),new Rectangle(x,right.Bottom-82,w,34));
@@ -96,8 +96,14 @@ internal sealed partial class JournalMenu
 
     private void OpenObjective(FieldObjective goal)
     {
+        if (!AccessibleTab(goal.Tab)) return;
         tab=goal.Tab;
         selected=goal.Selection;
+        if(tab=="museum")
+        {
+            if(Research.Cultures.Contains(goal.Culture))museumTheme=goal.Culture;
+            if(goal.Topic=="museum_award")museumAchievement=Math.Max(0,Array.FindIndex(LivingMuseum.Achievements,a=>a.Reward==goal.Artifact));
+        }
         keystone=goal.UseKeystone;
         residentArchive=false;
         scroll=0;

@@ -33,6 +33,8 @@ RU = {
  "culture.valley":"Наследие долины", "culture.dwarf":"Гномьи механизмы", "culture.sea":"Морские тайны",
  "rarity.0":"Обычный", "rarity.1":"Необычный", "rarity.2":"Редкий", "rarity.3":"Эпический", "rarity.4":"Легендарный",
  "item.journal.name":"Полевой дневник", "item.journal.description":"Истории, раскопки и восстановление артефактов. ПКМ, чтобы открыть. Горячая клавиша настраивается в config.json.",
+ "menu.journal":"Журнал археологии", "menu.journal-help":"Открыть раскопки, полевые цели и истории.",
+ "menu.collections":"Археологические коллекции", "menu.collections-help":"Посмотреть музейные коллекции и награды.",
  "item.surveyor.name":"Археологический прибор", "item.surveyor.description":"ПКМ на раскопках: направление и расстояние до находки. Подойди ближе и выкопай её мотыгой.",
  "mail.title":"Забытые истории долины", "mail.welcome":"Дорогой исследователь!^В земле долины скрывается немало историй. Я подготовил для тебя полевой дневник и записи о первых раскопках.^Нажми O, чтобы открыть дневник, и K для обследования местности. Клавиши можно изменить в config.json. Копии дневника и прибора можно получить на первой странице книги.^Приноси восстановленные древности в музей: через дневник мы зарегистрируем их в отдельном исследовательском архиве.^Буду с интересом следить за твоими открытиями!^^   — Гюнтер",
  "message.welcome":"Гюнтер прислал письмо! Дневник: {{journal}}. Поиск: {{survey}}.",
@@ -70,6 +72,8 @@ EN = {
  "culture.valley":"Valley Heritage", "culture.dwarf":"Dwarven Mechanisms", "culture.sea":"Secrets of the Sea",
  "rarity.0":"Common", "rarity.1":"Uncommon", "rarity.2":"Rare", "rarity.3":"Epic", "rarity.4":"Legendary",
  "item.journal.name":"Field Journal", "item.journal.description":"Stories, dig sites, and artifact restoration. Right-click to open. Configure shortcuts in config.json.",
+ "menu.journal":"Archaeology Journal", "menu.journal-help":"Open dig sites, field objectives and stories.",
+ "menu.collections":"Archaeology Collections", "menu.collections-help":"View museum collections and their rewards.",
  "item.surveyor.name":"Survey Instrument", "item.surveyor.description":"Right-click at a dig site to locate finds. Survey nearby, then dig the highlighted tile with a hoe.",
  "mail.title":"The valley's forgotten stories", "mail.welcome":"Dear explorer,^The valley's soil holds many stories. I have prepared a field journal and notes on your first dig sites.^Press O for your journal and K to survey. Shortcuts can be changed in config.json. You can collect a journal and instrument from the first page.^Bring restored artifacts to the museum and register them in our separate research archive through the journal.^I look forward to your discoveries!^^   - Gunther",
  "message.welcome":"A letter from Gunther! Journal: {{journal}}. Survey: {{survey}}.",
@@ -117,6 +121,12 @@ from nature_art import generate as generate_nature
 from resident_content import ARTIFACTS as RESIDENT_ARTIFACTS, RU as RESIDENT_RU, EN as RESIDENT_EN
 from resident_art import generate as generate_residents
 from field_content import RU as FIELD_RU, EN as FIELD_EN
+from mastery_content import RU as MASTERY_RU, EN as MASTERY_EN
+from journey_content import RU as JOURNEY_RU, EN as JOURNEY_EN
+from frontier_content import ARTIFACTS as FRONTIER_ARTIFACTS, RU as FRONTIER_RU, EN as FRONTIER_EN
+from frontier_art import generate as generate_frontiers
+from museum_content import RU as MUSEUM_RU, EN as MUSEUM_EN
+from museum_art import generate as generate_museum
 
 RU.update(WORKSHOP_RU)
 EN.update(WORKSHOP_EN)
@@ -124,6 +134,7 @@ DATA.extend(WEATHER_ARTIFACTS)
 DATA.extend(UNUSUAL_ARTIFACTS)
 DATA.extend(NATURE_ARTIFACTS)
 DATA.extend(RESIDENT_ARTIFACTS)
+DATA.extend(FRONTIER_ARTIFACTS)
 RU.update(WEATHER_RU)
 EN.update(WEATHER_EN)
 RU.update(GALLERY_RU)
@@ -138,8 +149,16 @@ RU.update(RESIDENT_RU)
 EN.update(RESIDENT_EN)
 RU.update(FIELD_RU)
 EN.update(FIELD_EN)
+RU.update(MASTERY_RU)
+EN.update(MASTERY_EN)
+RU.update(JOURNEY_RU)
+EN.update(JOURNEY_EN)
+RU.update(FRONTIER_RU)
+EN.update(FRONTIER_EN)
+RU.update(MUSEUM_RU)
+EN.update(MUSEUM_EN)
 
-atlas = Image.new("RGBA", (128, 80))
+atlas = Image.new("RGBA", (128, 96))
 icons = []
 catalog = []
 icon_dir = ROOT / "assets/icons"
@@ -182,4 +201,6 @@ generate_shipwreck(ROOT)
 generate_unusual(ROOT)
 generate_nature(ROOT)
 generate_residents(ROOT)
+generate_frontiers(ROOT)
+generate_museum(ROOT)
 print(f"Generated {len(catalog)} native 16x16 artifact icons, 3 interface icons, and 2 native placed lamps.")

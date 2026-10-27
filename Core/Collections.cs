@@ -13,7 +13,9 @@ public static class MuseumCollections
     {
         new("valley", "ancient_map", new[] { "settler_cup", "copper_brooch", "herbalist_flask" }),
         new("dwarf", "mechanical_clock", new[] { "brass_gear", "rune_tablet", "miner_goblet" }),
-        new("sea", "sea_mosaic", new[] { "clay_whistle", "sailor_buckle", "shell_comb" })
+        new("sea", "sea_mosaic", new[] { "clay_whistle", "sailor_buckle", "shell_comb" }),
+        new("calico", "caravan_panel", new[] { "caravan_token", "sun_clay_lamp", "glass_route_bead" }),
+        new("island", "island_totem", new[] { "island_spindle", "obsidian_scale", "woven_tide_band" })
     };
 
     public static int Count(ArchaeologyState state, MuseumCollection collection)

@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.TerrainFeatures;
 
 namespace Archeo;
 
@@ -13,7 +14,9 @@ public sealed partial class ModEntry
     {
         ["valley"] = new[] { "Forest", "Town", "BusStop", "Backwoods" },
         ["dwarf"] = new[] { "Mountain", "Railroad" },
-        ["sea"] = new[] { "Beach" }
+        ["sea"] = new[] { "Beach" },
+        ["calico"] = new[] { "Desert" },
+        ["island"] = new[] { "IslandSouth", "IslandEast" }
     };
 
     internal string LocationName(string name) => Game1.getLocationFromName(name)?.DisplayName ?? name;
@@ -33,9 +36,8 @@ public sealed partial class ModEntry
         return location.isTileOnMap(x, y) && x >= 2 && y >= 2
             && x < location.Map.Layers[0].LayerWidth - 2 && y < location.Map.Layers[0].LayerHeight - 2
             && !location.isWaterTile(x, y) && location.isTilePassable(tile)
-            && location.isTileLocationOpen(tile)
             && !BlockedByWorldStructures(location,tile)
-            && !location.Objects.ContainsKey(tile) && !location.terrainFeatures.ContainsKey(tile)
+            && !location.Objects.ContainsKey(tile) && (!location.terrainFeatures.TryGetValue(tile, out var terrain) || terrain is HoeDirt { crop: null })
             && location.doesTileHaveProperty(x, y, "Diggable", "Back") != null
             && location.doesTileHaveProperty(x, y, "Action", "Buildings") == null
             && !location.warps.Any(w => Math.Abs(w.X - x) + Math.Abs(w.Y - y) < 3);
@@ -47,15 +49,12 @@ public sealed partial class ModEntry
         if (location.Map == null) return result;
         var visited = new HashSet<Vector2>();
         var queue = new Queue<Vector2>();
-        var seeds = location.warps.Select(p => new Vector2(p.X, p.Y)).ToList();
-        if (location == Game1.currentLocation) seeds.Insert(0, Game1.player.Tile);
+        var seeds = location == Game1.currentLocation ? new List<Vector2> { Game1.player.Tile } : location.warps.Select(p => new Vector2(p.X, p.Y)).ToList();
         foreach (var seed in seeds)
         foreach (var delta in new[] { Vector2.Zero, new Vector2(1, 0), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(0, -1) })
         {
             var tile = seed + delta;
-            if (location.isTileOnMap(tile) && !location.isWaterTile((int)tile.X, (int)tile.Y) && location.isTilePassable(tile)
-                && location.isTileLocationOpen(tile) && !location.Objects.ContainsKey(tile) && !location.terrainFeatures.ContainsKey(tile)
-                && !BlockedByWorldStructures(location,tile) && visited.Add(tile)) queue.Enqueue(tile);
+            if (WalkableForSearch(location, tile) && visited.Add(tile)) queue.Enqueue(tile);
         }
         while (queue.Count > 0)
         {
@@ -64,21 +63,21 @@ public sealed partial class ModEntry
             foreach (var delta in new[] { new Vector2(1, 0), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(0, -1) })
             {
                 var next = tile + delta;
-                if (!location.isTileOnMap(next) || !visited.Add(next) || location.isWaterTile((int)next.X, (int)next.Y) || !location.isTilePassable(next)) continue;
-                if (!location.isTileLocationOpen(next) || location.Objects.ContainsKey(next) || location.terrainFeatures.ContainsKey(next) || BlockedByWorldStructures(location,next)) continue;
+                if (!visited.Add(next) || !WalkableForSearch(location, next)) continue;
                 queue.Enqueue(next);
             }
         }
         return result;
     }
 
-    private void RefreshSites()
+    private void RefreshSites(bool force = false)
     {
-        if (State.LastSiteDay == Today) return;
+        if (State.LastSiteDay == Today && !force) return;
         Core.Research.ExpireSites(State, Today);
-        State.VanillaSpots.Clear();
-        foreach (string culture in Core.Research.Cultures)
+        if (State.LastSiteDay != Today) State.VanillaSpots.Clear();
+        foreach (string culture in Core.Research.Cultures.Where(c => Core.Journey.IsOpen(State, c)))
         {
+            Research.Project(State, culture, RandomFor("project:" + culture));
             if (State.Sites.Any(p => p.Culture == culture && p.EventKind == "")) continue;
             var random = RandomFor("site:" + culture);
             foreach (string locationName in SiteLocations[culture].OrderBy(_ => random.Next()))
@@ -105,26 +104,28 @@ public sealed partial class ModEntry
         State.LastSiteDay = Today;
     }
 
-    private void RepairSite(DigSite site, GameLocation location)
+    private void RepairSite(DigSite site, GameLocation location, HashSet<Vector2>? reachable = null)
     {
         List<Vector2>? replacements = null;
         var random = RandomFor("repair:" + site.Culture);
         foreach (var point in site.Points.Where(p => !p.Dug))
         {
             var tile = new Vector2(point.X, point.Y);
-            if (ValidDigTile(location, tile) && InSiteArea(site,tile) && !OccupiedByDigPoint(site.Location, tile, site)) continue;
-            replacements ??= ReachableTiles(location);
+            if (ValidDigTile(location, tile) && (reachable == null || reachable.Contains(tile)) && InSiteArea(site,tile) && !OccupiedByDigPoint(site.Location, tile, site)) continue;
+            replacements ??= reachable?.Where(p => ValidDigTile(location, p)).ToList() ?? ReachableTiles(location);
             var available = replacements.Where(v => InSiteArea(site,v) && !OccupiedByDigPoint(site.Location, v, site)
                 && !site.Points.Any(p => p != point && !p.Dug && Vector2.DistanceSquared(v, new Vector2(p.X, p.Y)) < 4)).ToList();
             if (available.Count == 0) continue;
             tile = available[random.Next(available.Count)];
             point.X = (int)tile.X; point.Y = (int)tile.Y;
+            point.Revealed = false;
         }
     }
 
     internal void Survey()
     {
         if (!Context.IsPlayerFree) return;
+        if (!HoldingInstrument) { Notify(T(State.Journey.Started ? "journey.hold-instrument" : "journey.visit-museum")); return; }
         double now = Game1.currentGameTime.TotalGameTime.TotalSeconds;
         if (now < nextSurvey.Value) return;
         nextSurvey.Value = now + .7;
@@ -134,10 +135,12 @@ public sealed partial class ModEntry
         var (site, point) = found.Value;
         var target = new Vector2(point.X, point.Y);
         float distance = Vector2.Distance(Game1.player.Tile, target);
-        bool reveal = distance <= 2.5f;
-        signals.Value = new SurveySignal { Location = location.Name, SiteKey = site.Key, Target = target, Until = now + (reveal ? 90 : 8), Revealed = reveal };
+        bool reveal = point.Revealed || RoutesFromPlayer(location).PathTo(new(point.X, point.Y)).Count - 1 <= Core.Journey.RevealRadius(State);
+        if (reveal) point.Revealed = true;
+        signals.Value = new SurveySignal { Location = location.Name, SiteKey = site.Key, Target = target, Until = now + (reveal ? 180 : 20), Revealed = reveal, PulseUntil = now + 1.2 };
+        RefreshSignalRoute(location, signals.Value);
         string distanceKey = reveal ? "here" : distance <= 7 ? "near" : distance <= 16 ? "medium" : "far";
-        Notify(T("survey." + distanceKey, new { direction = Direction(target - Game1.player.Tile) }));
+        Notify(T("survey." + distanceKey, new { direction = Direction(signals.Value.Waypoint - Game1.player.Tile) }));
         Game1.playSound(reveal ? "newArtifact" : "clank");
         SaveState();
     }
@@ -156,10 +159,18 @@ public sealed partial class ModEntry
         var signal = signals.Value;
         double now = Game1.currentGameTime.TotalGameTime.TotalSeconds;
         var tile = new Vector2(x, y);
-        string? key = signal.Revealed && signal.Location == location.Name && signal.Until >= now && signal.Target == tile ? signal.SiteKey : "";
-        if (key.Length == 0 && resonance.Value.Location == location.Name && resonance.Value.Until >= now)
+        string? key = ActiveDigSites(location.Name).FirstOrDefault(s => s.Points.Any(p => p.X == x && p.Y == y && !p.Dug && p.Revealed))?.Key;
+        key ??= signal.Revealed && signal.Location == location.Name && signal.Until >= now && signal.Target == tile ? signal.SiteKey : "";
+        if (string.IsNullOrEmpty(key) && resonance.Value.Location == location.Name && resonance.Value.Until >= now)
             resonance.Value.Targets.TryGetValue(tile, out key);
-        if (string.IsNullOrEmpty(key) || Vector2.Distance(who.Tile, tile) > 3.5f) return;
+        if (string.IsNullOrEmpty(key))
+        {
+            if (signal.Location == location.Name && signal.Until >= now && Vector2.Distance(tile, signal.Target) <= 2)
+                Notify(T("journey.dig-marked"));
+            return;
+        }
+        if (Vector2.Distance(who.Tile, tile) > 12 || !ValidDigTile(location, tile)
+            || !location.terrainFeatures.TryGetValue(tile,out var dugGround) || dugGround is not HoeDirt { crop: null }) return;
         var site = State.Sites.FirstOrDefault(p => p.Key == key && p.Location == location.Name && p.Expires >= Today);
         var point = site?.Points.FirstOrDefault(p => p.X == x && p.Y == y && !p.Dug);
         if (site == null || point == null) return;
@@ -167,7 +178,8 @@ public sealed partial class ModEntry
         if (signal.SiteKey == key && signal.Target == tile) signal.Until = 0;
         resonance.Value.Targets.Remove(tile);
         var random = RandomFor($"find:{location.Name}:{x}:{y}:{site.Expires}");
-        AwardFragments(site.Culture, random, false);
+        int amount = AwardFragments(site.Culture, random, false);
+        ShowDigFeedback(site, point, amount);
         if (site.Points.All(p => p.Dug))
         {
             Research.Progress(State, site.Culture).Keystones++;
@@ -183,20 +195,21 @@ public sealed partial class ModEntry
 
     internal void OnVanillaDig(GameLocation location, int x, int y, Farmer who)
     {
-        if (!Config.EnableVanillaSpotFragments || !Context.IsWorldReady || states.Value == null || who != Game1.player) return;
+        if (!Config.EnableVanillaSpotFragments || !Context.IsWorldReady || states.Value == null || !State.Journey.Started || who != Game1.player) return;
         string spot = $"{location.NameOrUniqueName}:{x}:{y}";
         if (!State.VanillaSpots.Add(spot)) return;
         string culture = location.Name.Contains("Beach", StringComparison.OrdinalIgnoreCase) || location.Name.StartsWith("Island") ? "sea"
             : location.Name.Contains("Mine", StringComparison.OrdinalIgnoreCase) || location.Name is "Mountain" or "Railroad" or "Desert" ? "dwarf" : "valley";
+        culture = FrontierResearch.SpotCulture(location.Name,Core.Journey.IsOpen(State,"calico"),Core.Journey.IsOpen(State,"island"),culture);
         AwardFragments(culture, RandomFor("vanilla:" + spot), true);
         SaveState();
     }
 
-    private void AwardFragments(string culture, Random random, bool vanilla)
+    private int AwardFragments(string culture, Random random, bool vanilla)
     {
         var progress = Research.Progress(State, culture);
         int amount = Math.Max(1, (int)Math.Round((vanilla ? random.Next(2, 5) : random.Next(5, 10)) * Config.FragmentMultiplier));
-        amount += Core.Research.Level(State.Experience) / 4;
+        amount += Core.Research.Level(State.Experience) / 4 + Mastery.FragmentBonus(State);
         progress.Fragments += amount;
         State.Finds++;
         State.Experience += vanilla ? 8 : 15;
@@ -204,6 +217,7 @@ public sealed partial class ModEntry
         Notify(T("message.fragments", new { amount, culture = CultureName(culture) }));
         Game1.playSound("coin");
         OnWorkshopFind(culture);
+        return amount;
     }
 
     private void OnRenderedWorld(object? sender, RenderedWorldEventArgs e)
@@ -213,26 +227,18 @@ public sealed partial class ModEntry
         DrawBellPulse(e.SpriteBatch);
         DrawUnusualRelics(e.SpriteBatch);
         DrawResonance(e.SpriteBatch);
+        DrawFieldFeedback(e.SpriteBatch);
         var signal = signals.Value;
         double now = Game1.currentGameTime.TotalGameTime.TotalSeconds;
+        DrawRevealedPoints(e.SpriteBatch, now);
         if (signal.Until <= now || signal.Location != Game1.currentLocation.Name) return;
         var b = e.SpriteBatch;
         float distance = Vector2.Distance(Game1.player.Tile, signal.Target);
         Color color = signal.Revealed ? new Color(255, 216, 112) : distance < 7 ? Color.LightGreen : distance < 16 ? Color.Gold : Color.IndianRed;
         Vector2 origin = Game1.GlobalToLocal(Game1.player.Position + new Vector2(32, -28));
-        if (signal.Revealed)
+        if (!signal.Revealed)
         {
-            Vector2 tile = Game1.GlobalToLocal(signal.Target * 64);
-            float pulse = .65f + .25f * (float)Math.Sin(now * 5);
-            b.Draw(Game1.staminaRect, new Rectangle((int)tile.X + 7, (int)tile.Y + 7, 50, 3), color * pulse);
-            b.Draw(Game1.staminaRect, new Rectangle((int)tile.X + 7, (int)tile.Y + 54, 50, 3), color * pulse);
-            b.Draw(Game1.staminaRect, new Rectangle((int)tile.X + 7, (int)tile.Y + 7, 3, 50), color * pulse);
-            b.Draw(Game1.staminaRect, new Rectangle((int)tile.X + 54, (int)tile.Y + 7, 3, 50), color * pulse);
-            b.Draw(Atlas, tile + new Vector2(16, -12 + (float)Math.Sin(now * 4) * 3), new Rectangle(7 * 16, 2 * 16, 16, 16), color, 0, Vector2.Zero, 2, SpriteEffects.None, 1);
-        }
-        else
-        {
-            float rotation = MathF.Atan2(signal.Target.Y - Game1.player.Tile.Y, signal.Target.X - Game1.player.Tile.X);
+            float rotation = MathF.Atan2(signal.Waypoint.Y - Game1.player.Tile.Y, signal.Waypoint.X - Game1.player.Tile.X);
             b.Draw(Game1.staminaRect, origin, new Rectangle(0, 0, 1, 1), color, rotation, new Vector2(0, .5f), new Vector2(45, 5), SpriteEffects.None, 1);
             b.Draw(Game1.staminaRect, origin + new Vector2(MathF.Cos(rotation), MathF.Sin(rotation)) * 44, null, color, rotation + MathF.PI / 4, new Vector2(.5f), 12, SpriteEffects.None, 1);
         }
@@ -242,9 +248,9 @@ public sealed partial class ModEntry
     {
         if (!Config.ShowHud || !Context.IsWorldReady || states.Value == null || Game1.activeClickableMenu != null || Game1.eventUp) return;
         DrawTrackedObjective(e.SpriteBatch);
-        var site = ActiveDigSites(Game1.currentLocation.Name).OrderBy(p => p.EventKind.Length == 0 ? 1 : 0).FirstOrDefault();
+        var site = HudDigSite();
         if (site == null) return;
-        string text = T("hud.site", new { culture = SiteName(site), count = site.Points.Count(p => !p.Dug), key = Config.SurveyKey.ToString() });
+        string text = T("journey.hud-progress", new { culture = SiteName(site), found = site.Points.Count(p => p.Dug), total = site.Points.Count });
         var size = Game1.smallFont.MeasureString(text) * .85f;
         var rect = new Rectangle(20, Game1.uiViewport.Height - 164, (int)size.X + 30, 40);
         e.SpriteBatch.Draw(Game1.staminaRect, rect, new Color(41, 31, 28) * .85f);

@@ -67,7 +67,7 @@ internal sealed partial class JournalMenu
         maxScroll = Math.Max(0, lines.Count - visible);
         scroll = Math.Clamp(scroll, 0, maxScroll);
         for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], x, textTop + (i - scroll) * lineH);
-        if (maxScroll > scroll) Text(b, "↓", right.Right - 24, bottom - 16, Muted);
+        if (maxScroll > scroll) Text(b, "v", right.Right - 24, bottom - 16, Muted);
         if (action != null)
             Button(b, "ship:action:" + action, mod.T("shipwreck.action." + action), new Rectangle(x, right.Bottom - 44, w, 38), mod.CanShipwreckAction(action));
     }

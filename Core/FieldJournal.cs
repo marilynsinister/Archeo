@@ -28,6 +28,15 @@ public static class FieldJournal
         bool weatherEnabled = true, bool natureEnabled = true)
     {
         var goals = new List<FieldObjective>();
+        if(Journey.IsOpen(state,"museum"))
+        {
+            if(state.Museum.Order is {Completed:false} order && order.Week==LivingMuseum.Week(day))
+                goals.Add(new(){Id="museum:order:"+order.Week,Kind=ObjectiveKind.Talk,Tab="museum",Selection="orders",Npc="Gunther",Location="ArchaeologyHouse",Culture=order.Theme,Topic="museum_order",Expires=LivingMuseum.WeekEnd(day),DetailKey="museum.goal-detail.order"});
+            if(state.Museum.Exhibition is {Claimed:false} show && (show.Ready||show.Ends>=day))
+                goals.Add(new(){Id="museum:show:"+show.Started,Kind=show.Ready?ObjectiveKind.Reward:ObjectiveKind.Wait,Tab="museum",Selection="shows",Topic="museum_show",Culture=show.Theme,Remaining=Math.Max(0,LivingMuseum.RequiredDays-show.DisplayDays),Expires=show.Ready?int.MaxValue:show.Ends,DetailKey="museum.goal-detail.show"});
+            foreach(var achievement in LivingMuseum.Achievements.Where(a=>LivingMuseum.AchievementReady(state.Museum,a.Id)&&!state.Museum.AchievementClaims.Contains(a.Id)))
+                goals.Add(new(){Id="museum:award:"+achievement.Id,Kind=ObjectiveKind.Reward,Tab="museum",Selection="achievements",Topic="museum_award",Artifact=achievement.Reward,DetailKey="museum.goal-detail.award"});
+        }
         var active = state.Sites.Where(p => p.Expires >= day && p.Points.Any(n => !n.Dug)).ToList();
         foreach (var site in active)
         {
@@ -60,8 +69,8 @@ public static class FieldJournal
             if (!state.Cultures.TryGetValue(culture,out var progress)) continue;
             var project = catalog.FirstOrDefault(p => p.Id == progress.Project && p.Culture == culture && p.Source == "research");
             if (project == null) continue;
-            bool useKey = progress.Fragments < project.Cost && progress.Keystones > 0;
-            int cost = Research.Required(project,progress,useKey);
+            bool useKey = progress.Fragments < Research.Required(project,progress,false,state) && progress.Keystones > 0;
+            int cost = Research.Required(project,progress,useKey,state);
             if (progress.Fragments < cost) continue;
             goals.Add(new FieldObjective { Id = "restore:"+culture+":"+project.Id, Kind = ObjectiveKind.Restore, Tab = culture,
                 Selection = project.Id, Artifact = project.Id, Culture = culture, Cost = cost, UseKeystone = useKey,

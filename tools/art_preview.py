@@ -14,14 +14,14 @@ def font(size):
 def make_previews(root, catalog, names, icons):
     out = root / "previews"
     out.mkdir(exist_ok=True)
-    sheet = Image.new("RGB", (1120, 1604), "#e8dbbe")
+    sheet = Image.new("RGB", (1120, 2028), "#e8dbbe")
     draw = ImageDraw.Draw(sheet)
     ink = "#281b26"
     draw.text((28, 17), "Археология · иконки артефактов", fill=ink, font=font(28))
     draw.text((29, 58), "Исходники 16 × 16 px   ·   Просмотр ×6 без сглаживания   ·   Справа внизу — размер 1:1", fill="#6c5647", font=font(16))
-    headings = ("НАСЛЕДИЕ ДОЛИНЫ", "ГНОМЬИ МЕХАНИЗМЫ", "МОРСКИЕ ТАЙНЫ", "ПОСЛЕ ДОЖДЯ И ГРОЗЫ", "НЕОБЫЧНЫЕ РЕЛИКВИИ", "ПРИРОДНЫЕ СОБЫТИЯ", "ИСТОРИИ ЖИТЕЛЕЙ")
-    groups = (range(0,7),range(7,14),range(14,21),range(21,23),range(23,27),range(27,30),range(30,len(catalog)))
-    for row in range(7):
+    headings = ("НАСЛЕДИЕ ДОЛИНЫ", "ГНОМЬИ МЕХАНИЗМЫ", "МОРСКИЕ ТАЙНЫ", "ПОСЛЕ ДОЖДЯ И ГРОЗЫ", "НЕОБЫЧНЫЕ РЕЛИКВИИ", "ПРИРОДНЫЕ СОБЫТИЯ", "ИСТОРИИ ЖИТЕЛЕЙ", "ПЕСКИ КАЛИКО", "НАСЛЕДИЕ ОСТРОВА")
+    groups = (range(0,7),range(7,14),range(14,21),range(21,23),range(23,27),range(27,30),range(30,33),range(33,38),range(38,43))
+    for row in range(len(groups)):
         y = 104 + row * 212
         draw.text((29, y), headings[row], fill="#6c5647", font=font(14))
         for col,index in enumerate(groups[row]):

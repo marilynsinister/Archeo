@@ -1,6 +1,64 @@
 using System.Reflection;
 using System.Runtime.Loader;
 string game = @"D:\Games\Steam\steamapps\common\Stardew Valley";
+if(args.Contains("--museum-api"))
+{
+    using var image=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"Stardew Valley.dll"));
+    foreach(var query in new[]{("StardewValley.Utility","ForEachLocation|GetAllLocations"),("StardewValley.Object","questItem|isLostItem"),("StardewValley.Item","modData|Stack"),("StardewValley.NPC","GetBoundingBox")})
+    {
+        var type=image.MainModule.GetType(query.Item1);
+        foreach(var method in type.Methods.Where(p=>p.IsPublic&&System.Text.RegularExpressions.Regex.IsMatch(p.Name,query.Item2)))Console.WriteLine(method.FullName+" / "+string.Join(",",method.Parameters.Select(p=>p.Name)));
+        foreach(var field in type.Fields.Where(p=>p.IsPublic&&System.Text.RegularExpressions.Regex.IsMatch(p.Name,query.Item2)))Console.WriteLine(field.FullName);
+    }
+    return;
+}
+if(args.Contains("--frontier-api"))
+{
+    using var image=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"Stardew Valley.dll"));
+    foreach(var name in new[]{"StardewValley.Locations.BusStop","StardewValley.Locations.BoatTunnel","StardewValley.Locations.IslandSouth"})
+    {
+        var type=image.MainModule.GetType(name);
+        foreach(var method in type.Methods.Where(p=>p.HasBody))
+        foreach(var instruction in method.Body.Instructions.Where(p=>p.OpCode.Code==Mono.Cecil.Cil.Code.Ldstr && System.Text.RegularExpressions.Regex.IsMatch(p.Operand?.ToString()??"","Vault|Boat|boat|Island|island|Bus|bus")))
+            Console.WriteLine(method.Name+": "+instruction.Operand);
+    }
+    foreach(var name in new[]{"StardewValley.Buff","StardewValley.Buffs.BuffEffects","StardewValley.Buffs.BuffManager","StardewValley.Farmer"})
+    {
+        var type=image.MainModule.GetType(name);
+        foreach(var method in type.Methods.Where(p=>p.IsPublic && (p.IsConstructor && name!="StardewValley.Farmer" || p.Name=="applyBuff" || name.Contains("BuffManager"))))Console.WriteLine(method.FullName);
+        if(name.Contains("Buff"))foreach(var field in type.Fields.Where(p=>p.IsPublic))Console.WriteLine(field.FullName);
+    }
+    return;
+}
+if(args.Contains("--excavation-api"))
+{
+    using var image=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"Stardew Valley.dll"));
+    using var smapi=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"StardewModdingAPI.dll"));
+    foreach(var instruction in smapi.MainModule.GetType("StardewModdingAPI.Context").Methods.Single(p=>p.Name=="get_IsPlayerFree").Body.Instructions)Console.WriteLine(instruction);
+    foreach(var query in new[]{("StardewValley.Tools.Hoe","DoFunction|tilesAffected"),("StardewValley.Tool","tilesAffected"),("StardewValley.TerrainFeatures.TerrainFeature","isPassable"),("StardewValley.Farmer","CurrentTool|CurrentItem")})
+    {
+        var type=image.MainModule.GetType(query.Item1);
+        foreach(var method in type.Methods.Where(p=>System.Text.RegularExpressions.Regex.IsMatch(p.Name,query.Item2)))
+        {
+            Console.WriteLine(method.FullName);
+            if(type.Name=="Hoe" && method.Name=="DoFunction") foreach(var instruction in method.Body.Instructions) Console.WriteLine(instruction);
+        }
+    }
+    return;
+}
+if(args.Contains("--journal-api"))
+{
+    using var image=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"Stardew Valley.dll"));
+    foreach(var query in new[]{("StardewValley.Menus.TextBox","Selected|Text|Update|Draw|ctor|Width|Height|X|Y"),("StardewValley.Game1","showTextEntry|keyboardDispatcher"),("StardewValley.Menus.IClickableMenu","receiveGamePadButton|cleanupBeforeExit")})
+    {
+        var type=image.MainModule.GetType(query.Item1);
+        foreach(var method in type.Methods.Where(p=>p.IsPublic && System.Text.RegularExpressions.Regex.IsMatch(p.Name,query.Item2))) Console.WriteLine(method.FullName);
+        foreach(var field in type.Fields.Where(p=>p.IsPublic && System.Text.RegularExpressions.Regex.IsMatch(p.Name,query.Item2))) Console.WriteLine(field.FullName);
+    }
+    using var smapi=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"StardewModdingAPI.dll"));
+    foreach(var field in smapi.MainModule.GetType("StardewModdingAPI.SButton").Fields.Where(p=>p.Name.StartsWith("Controller"))) Console.WriteLine(field.Name);
+    return;
+}
 if(args.Contains("--verify-residents"))
 {
     using var image=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"Stardew Valley.dll"));

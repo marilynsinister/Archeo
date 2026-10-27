@@ -12,7 +12,7 @@ public sealed partial class ModEntry
         var date = Game1.Date;
         NaturalEvents.Observe(State.Nature, Today, date.Year, date.SeasonIndex, date.DayOfMonth, farm.IsSnowingHere(),
             farm.resourceClumps.Where(p => p.parentSheetIndex.Value == 622).Select(p => new GridPoint((int)p.Tile.X, (int)p.Tile.Y)),
-            Config.EnableNatureEvents, Config.NatureSiteLifetimeDays);
+            Config.EnableNatureEvents && State.Journey.Started && State.Finds >= 6, Config.NatureSiteLifetimeDays);
     }
 
     private static bool InSiteArea(DigSite site, Vector2 tile)
@@ -62,7 +62,7 @@ public sealed partial class ModEntry
     {
         if (!NaturalEvents.Complete(State,site,Today)) return;
         bool meteor = site.EventKind == "meteor";
-        int fragments = meteor ? 18 : 12, experience = meteor ? 75 : 45;
+        int fragments = meteor ? 18 : 12, experience = Mastery.HistoryReward(State, meteor ? 75 : 45);
         Research.Progress(State,site.Culture).Fragments += fragments;
         State.Experience += experience;
         Notify(T("nature.completed",new { name = T("nature.name."+site.EventKind), fragments, experience }));

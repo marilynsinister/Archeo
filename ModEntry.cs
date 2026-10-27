@@ -42,12 +42,7 @@ public sealed partial class ModEntry : Mod
     public override void Entry(IModHelper helper)
     {
         Config = helper.ReadConfig<ModConfig>();
-        Config.SiteLifetimeDays = Math.Clamp(Config.SiteLifetimeDays, 1, 14);
-        Config.FindsPerSite = Math.Clamp(Config.FindsPerSite, 2, 8);
-        Config.FragmentMultiplier = float.IsFinite(Config.FragmentMultiplier) ? Math.Clamp(Config.FragmentMultiplier, .25f, 5f) : 1;
-        Config.WeatherSiteLifetimeDays = Math.Clamp(Config.WeatherSiteLifetimeDays, 2, 7);
-        Config.WeatherEventCooldownDays = Math.Clamp(Config.WeatherEventCooldownDays, 2, 14);
-        Config.NatureSiteLifetimeDays = Math.Clamp(Config.NatureSiteLifetimeDays, 3, 14);
+        Config.Normalize();
         helper.WriteConfig(Config);
         Research = new Research(helper.Data.ReadJsonFile<List<ArtifactDefinition>>("assets/artifacts.json") ?? throw new InvalidDataException("Missing artifact catalog."));
         helper.Events.Content.AssetRequested += OnAssetRequested;
@@ -61,24 +56,27 @@ public sealed partial class ModEntry : Mod
             PastTexture = helper.ModContent.Load<Texture2D>("assets/past_tracks.png");
         };
         helper.Events.GameLoop.SaveLoaded += (_, _) => { LoadState(); InitializeGallery(); InitializeUnusualRelics(); };
-        helper.Events.GameLoop.DayStarted += (_, _) => { if (states.Value != null) { RefreshSites(); RefreshWeatherSites(); RefreshShipwreckSites(); RefreshResidentSites(); RefreshStarSites(); RefreshNatureSites(); SendIntroduction(); SaveState(); } };
-        helper.Events.GameLoop.DayEnding += (_, _) => { if (states.Value != null) { RememberWeather(); RememberShipwreckWeather(); RememberNature(); SaveState(); } };
+        helper.Events.GameLoop.DayStarted += (_, _) => { if (states.Value != null) { RefreshSites(RefreshFrontiers()); RefreshWeatherSites(); RefreshShipwreckSites(); RefreshResidentSites(); RefreshStarSites(); RefreshNatureSites(); RefreshMuseum(); SendIntroduction(); SaveState(); } };
+        helper.Events.GameLoop.DayEnding += (_, _) => { if (states.Value != null) { RememberWeather(); RememberShipwreckWeather(); RememberNature(); ObserveMuseumDisplays(); SaveState(); } };
         helper.Events.GameLoop.Saving += (_, _) => SaveState();
-        helper.Events.GameLoop.ReturnedToTitle += (_, _) => { states.ResetAllScreens(); signals.ResetAllScreens(); companions.ResetAllScreens(); resonance.ResetAllScreens(); bellPulses.ResetAllScreens(); ResetUnusualRelics(); invalidStates.Clear(); galleryRequestPending = false; };
+        helper.Events.GameLoop.ReturnedToTitle += (_, _) => { states.ResetAllScreens(); signals.ResetAllScreens(); digFeedback.ResetAllScreens(); companions.ResetAllScreens(); resonance.ResetAllScreens(); bellPulses.ResetAllScreens(); ResetUnusualRelics(); invalidStates.Clear(); galleryRequestPending = false; };
         helper.Events.GameLoop.UpdateTicked += UpdateCompanion;
+        helper.Events.GameLoop.UpdateTicked += UpdateFieldSearch;
         helper.Events.Input.ButtonsChanged += OnButtonsChanged;
         helper.Events.Input.ButtonPressed += OnButtonPressed;
+        helper.Events.Player.Warped += OnFrontierWarp;
         helper.Events.Display.RenderedWorld += OnRenderedWorld;
         helper.Events.Display.RenderedHud += OnRenderedHud;
         helper.Events.Display.RenderedHud += DrawGalleryHover;
+        helper.Events.Display.RenderedActiveMenu += DrawCharacterMenuButtons;
         helper.Events.Display.MenuChanged += (_, e) => { if (e.OldMenu is DisplayCaseMenu gallery) gallery.Release(); };
-        helper.ConsoleCommands.Add("archeo", "Archaeology tools: archeo status | journal | goals | survey | workshop | weather | collections | shipwreck | nature | residents | validate", OnCommand);
+        helper.ConsoleCommands.Add("archeo", "Archaeology tools: archeo status | journal | goals | catalog | mastery | settings | survey | workshop | weather | collections | shipwreck | nature | residents | validate", OnCommand);
         try
         {
             var harmony = new Harmony(Id);
             DigPatches.Mod = this;
             harmony.Patch(AccessTools.Method(typeof(GameLocation), nameof(GameLocation.digUpArtifactSpot), new[] { typeof(int), typeof(int), typeof(Farmer) }), postfix: new HarmonyMethod(typeof(DigPatches), nameof(DigPatches.ArtifactSpot)));
-            harmony.Patch(AccessTools.Method(typeof(Hoe), nameof(Hoe.DoFunction)), postfix: new HarmonyMethod(typeof(DigPatches), nameof(DigPatches.HoeUsed)));
+            harmony.Patch(AccessTools.Method(typeof(Hoe), nameof(Hoe.DoFunction)), prefix: new HarmonyMethod(typeof(DigPatches), nameof(DigPatches.BeforeHoe)), postfix: new HarmonyMethod(typeof(DigPatches), nameof(DigPatches.HoeUsed)));
         }
         catch (Exception ex)
         {
@@ -126,7 +124,7 @@ public sealed partial class ModEntry : Mod
             e.Edit(asset =>
             {
                 var data = asset.AsDictionary<string, string>().Data;
-                data[ItemId("display_case")] = $"{ItemId("display_case")}/table/1 2/1 1/1/0/2/{T("workshop.case.name")}/0/{Helper.ModContent.GetInternalAssetName("assets/display_case.png").Name}/true";
+                data[ItemId("display_case")] = $"{ItemId("display_case")}/table/1 2/1 1/1/0/2/{T("workshop.case.name")}/0/{FurnitureTexture("assets/display_case.png")}/true";
                 RegisterGalleryFurniture(data);
             });
         if (e.NameWithoutLocale.IsEquivalentTo("Data/BigCraftables"))
@@ -171,13 +169,16 @@ public sealed partial class ModEntry : Mod
             }
         }
         else states.Value = new ArchaeologyState();
-        foreach (string culture in Core.Research.Cultures) Research.Project(State, culture, RandomFor("project:" + culture));
-        RefreshSites();
+        Core.Journey.Initialize(State, Research.Artifacts, Game1.player.Items.Any(p => p?.ItemId == ItemId("surveyor")));
+        bool frontierOpened=RefreshFrontiers();
+        foreach (string culture in Core.Research.Cultures.Where(c => Core.Journey.IsOpen(State, c))) Research.Project(State, culture, RandomFor("project:" + culture));
+        RefreshSites(frontierOpened);
         RefreshWeatherSites();
         RefreshShipwreckSites();
         RefreshResidentSites();
         RefreshStarSites();
         RefreshNatureSites();
+        RefreshMuseum();
         SendIntroduction();
         SaveState();
     }
@@ -186,6 +187,7 @@ public sealed partial class ModEntry : Mod
     {
         if (Context.IsWorldReady && states.Value != null && !invalidStates.Contains(Game1.player.UniqueMultiplayerID))
         {
+            Core.Journey.Refresh(State, Research.Artifacts);
             FieldJournal.PruneTracking(State,FieldObjectives());
             Game1.player.modData[StateKey] = JsonSerializer.Serialize(State);
         }
@@ -208,20 +210,18 @@ public sealed partial class ModEntry : Mod
             Helper.Input.SuppressActiveKeybinds(Config.JournalKey);
             OpenJournal();
         }
-        else if (Config.SurveyKey.JustPressed())
-        {
-            Helper.Input.SuppressActiveKeybinds(Config.SurveyKey);
-            Survey();
-        }
     }
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
     {
+        if (TryHandleCharacterMenuButton(e)) return;
         if (!Context.IsWorldReady || states.Value == null || !Context.IsPlayerFree || !e.Button.IsActionButton()) return;
+        if (TryIntroInteraction(e.Cursor.GrabTile)) { Helper.Input.Suppress(e.Button); return; }
         if (TryGalleryInteraction(e.Cursor.GrabTile, e.Cursor.AbsolutePixels)) { Helper.Input.Suppress(e.Button); return; }
         if (TryShipBellInteraction(e.Cursor.GrabTile)) { Helper.Input.Suppress(e.Button); return; }
         if (TryShipwreckInteraction(e.Cursor.GrabTile)) { Helper.Input.Suppress(e.Button); return; }
         if (TryWorkshopInteraction(e.Cursor.GrabTile)) { Helper.Input.Suppress(e.Button); return; }
+        if(TryMuseumReaction(e.Cursor.GrabTile)){Helper.Input.Suppress(e.Button);return;}
         var item = Game1.player.CurrentItem;
         if (item == null) return;
         if (item.ItemId == ItemId("journal")) { Helper.Input.Suppress(e.Button); OpenJournal(); }
@@ -245,6 +245,9 @@ public sealed partial class ModEntry : Mod
         Game1.player.addItemToInventoryBool(item);
         DiscoverShipwreck();
         DiscoverResidents();
+        Core.Journey.Refresh(State, Research.Artifacts);
+        RefreshSites(true);
+        RefreshMuseum();
         SaveState();
         Game1.playSound("reward");
         Notify(T("message.restored", new { name = ArtifactName(artifact) }));
@@ -257,6 +260,7 @@ public sealed partial class ModEntry : Mod
         if (item == null) { Notify(T("message.bring-artifact")); return; }
         if (item.Stack > 1) item.Stack--; else Game1.player.removeItemFromInventory(item);
         State.Donated.Add(artifact.Id);
+        RefreshMuseum();
         Game1.player.Money += Math.Max(100, artifact.Price / 2);
         Research.Progress(State, artifact.Culture).Keystones++;
         SaveState();
@@ -266,14 +270,7 @@ public sealed partial class ModEntry : Mod
 
     internal void ClaimTools()
     {
-        foreach (string id in new[] { "journal", "surveyor" })
-        {
-            if (Game1.player.Items.Any(p => p?.ItemId == ItemId(id))) continue;
-            var item = ItemRegistry.Create("(O)" + ItemId(id));
-            if (!Game1.player.couldInventoryAcceptThisItem(item)) { Notify(T("message.inventory-full")); return; }
-            Game1.player.addItemToInventoryBool(item);
-        }
-        Game1.playSound("coin");
+        ClaimFieldKit();
     }
 
     private void OnCommand(string command, string[] args)
@@ -286,10 +283,13 @@ public sealed partial class ModEntry : Mod
                 if (ItemRegistry.GetDataOrErrorItem(item.QualifiedItemId).IsErrorItem) throw new InvalidDataException("Invalid registered artifact: " + artifact.Id);
                 if (!Helper.Translation.Get("artifact." + artifact.Id + ".lore").HasValue()) throw new InvalidDataException("Missing lore: " + artifact.Id);
             }
-            foreach (string id in MuseumCollections.All.Select(p => p.Reward).Concat(new[] { "display_case", "gallery_case" }))
+            foreach (string id in MuseumCollections.All.Select(p => p.Reward).Concat(LivingMuseum.Achievements.Select(a=>a.Reward)).Concat(new[] { "display_case", "gallery_case" }))
             {
                 var furniture = ItemRegistry.Create("(F)" + ItemId(id));
                 if (ItemRegistry.GetDataOrErrorItem(furniture.QualifiedItemId).IsErrorItem) throw new InvalidDataException("Invalid furniture registration: " + id);
+                string[] fields = Game1.content.Load<Dictionary<string, string>>("Data/Furniture")[ItemId(id)].Split('/');
+                if (fields.Length != 11) throw new InvalidDataException("Invalid slash-delimited furniture data: " + id);
+                _ = Game1.content.Load<Texture2D>(fields[9]);
             }
             if (WorkshopAtlas.Width != 96 || WorkshopAtlas.Height != 16 || MoleTexture.Width != 64 || MoleTexture.Height != 64)
                 throw new InvalidDataException("Invalid workshop spritesheet dimensions.");
@@ -298,9 +298,9 @@ public sealed partial class ModEntry : Mod
             var bell = ItemRegistry.Create("(BC)" + ItemId(Shipwreck.BellId));
             if (ItemRegistry.GetDataOrErrorItem(bell.QualifiedItemId).IsErrorItem || !bellHookReady || ShipwreckAtlas.Width != 64 || ShipwreckAtlas.Height != 16)
                 throw new InvalidDataException("Ship bell registration, story sprites or interaction hook are unavailable.");
-            if (PastTexture.Width != 32 || PastTexture.Height != 16 || Atlas.Width != 128 || Atlas.Height != 80)
+            if (PastTexture.Width != 32 || PastTexture.Height != 16 || Atlas.Width != 128 || Atlas.Height != 96)
                 throw new InvalidDataException("Invalid relic or spectral effect atlas dimensions.");
-            Monitor.Log($"PASS: {Research.Artifacts.Count} artifacts, 5 furniture registrations, ship bell, interaction hooks, sprites, and localized lore.", LogLevel.Info);
+            Monitor.Log($"PASS: {Research.Artifacts.Count} artifacts, 10 furniture registrations, ship bell, interaction hooks, sprites, and localized lore.", LogLevel.Info);
             return;
         }
         if (!Context.IsWorldReady || states.Value == null) { Monitor.Log("Load a save first.", LogLevel.Info); return; }
@@ -308,10 +308,14 @@ public sealed partial class ModEntry : Mod
         {
             case "journal": OpenJournal(); break;
             case "goals": OpenJournal(); break;
+            case "catalog": Game1.activeClickableMenu = new JournalMenu(this, "catalog"); break;
+            case "mastery": Game1.activeClickableMenu = new JournalMenu(this, "mastery"); break;
+            case "settings": Game1.activeClickableMenu = new JournalMenu(this, "settings"); break;
             case "survey": Survey(); break;
             case "workshop": Game1.activeClickableMenu = new JournalMenu(this, "workshop"); break;
             case "weather": Game1.activeClickableMenu = new JournalMenu(this, "weather"); break;
             case "collections": Game1.activeClickableMenu = new JournalMenu(this, "gallery"); break;
+            case "museum": Game1.activeClickableMenu = new JournalMenu(this,"museum");break;
             case "shipwreck": Game1.activeClickableMenu = new JournalMenu(this, "shipwreck"); break;
             case "nature": Game1.activeClickableMenu = new JournalMenu(this, "nature"); break;
             case "residents": Game1.activeClickableMenu = new JournalMenu(this, "residents"); break;
@@ -327,6 +331,10 @@ internal sealed class SurveySignal
     public double Until { get; set; }
     public bool Revealed { get; set; }
     public string SiteKey { get; set; } = "";
+    public Vector2 Waypoint { get; set; }
+    public Vector2 LastPlayerTile { get; set; } = new(-999, -999);
+    public double NextRouteCheck { get; set; }
+    public double PulseUntil { get; set; }
 }
 
 internal static class DigPatches
@@ -337,9 +345,16 @@ internal static class DigPatches
         try { Mod.OnVanillaDig(__instance, __0, __1, __2); }
         catch (Exception ex) { Mod.Monitor.Log($"Artifact spot bonus failed: {ex}", LogLevel.Error); }
     }
-    internal static void HoeUsed(GameLocation __0, int __1, int __2, Farmer __4)
+    private static readonly System.Reflection.MethodInfo AffectedTiles = AccessTools.Method(typeof(Tool), "tilesAffected");
+    internal static void BeforeHoe(Hoe __instance, int __1, int __2, Farmer __4, out List<Vector2> __state)
     {
-        try { Mod.OnHoeDig(__0, __1 / 64, __2 / 64, __4); }
+        __state = new();
+        try { __state = (List<Vector2>)AffectedTiles.Invoke(__instance, new object[] { new Vector2(__1 / 64, __2 / 64), __4.toolPower.Value, __4 })!; }
+        catch (Exception ex) { Mod.Monitor.Log($"Could not inspect hoe area: {ex}", LogLevel.Error); }
+    }
+    internal static void HoeUsed(GameLocation __0, Farmer __4, List<Vector2> __state)
+    {
+        try { foreach (var tile in __state) Mod.OnHoeDig(__0, (int)tile.X, (int)tile.Y, __4); }
         catch (Exception ex) { Mod.Monitor.Log($"Excavation failed: {ex}", LogLevel.Error); }
     }
 }

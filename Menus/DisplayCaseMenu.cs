@@ -118,7 +118,7 @@ internal sealed class DisplayCaseMenu : IClickableMenu
         if (index >= 0) { Deposit(index); return; }
         if (caption.Contains(x, y))
         {
-            string[] options = { "general", "valley", "dwarf", "sea" };
+            string[] options = mod.MuseumCaptionOptions();
             string current = furniture.modData.TryGetValue(ModEntry.CaptionKey, out string? value) ? value : "general";
             furniture.modData[ModEntry.CaptionKey] = options[(Array.IndexOf(options, current) + 1) % options.Length];
             Game1.playSound("smallSelect");
@@ -146,7 +146,7 @@ internal sealed class DisplayCaseMenu : IClickableMenu
     {
         b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height), Color.Black * .65f);
         drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
-        Text(b, mod.T("gallery.case-name"), xPositionOnScreen + 32, yPositionOnScreen + 25, width - 80);
+        Text(b, furniture.DisplayName, xPositionOnScreen + 32, yPositionOnScreen + 25, width - 80);
         Text(b, mod.T("gallery.transfer-hint"), xPositionOnScreen + 32, yPositionOnScreen + 64, width - 64);
         for (int i = 0; i < exhibits.Count; i++)
         {

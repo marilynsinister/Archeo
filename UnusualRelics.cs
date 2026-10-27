@@ -31,6 +31,7 @@ public sealed partial class ModEntry
         var found = FindSurveyTarget(location);
         if (found == null) { Notify(T("relic.travel")); return false; }
         var (site, point) = found.Value;
+        point.Revealed = true;
         var start = new GridPoint((int)Game1.player.Tile.X, (int)Game1.player.Tile.Y);
         var goal = new GridPoint(point.X, point.Y);
         var trail = Core.UnusualRelics.FindTrail(start, goal, cell =>
@@ -100,7 +101,7 @@ public sealed partial class ModEntry
         Core.UnusualRelics.ExpireLead(State.Stars, Today);
         if (State.Stars.Lead != null || ActiveStarSite() != null) { Notify(T("unusual.stars-existing")); return false; }
         var random = RandomFor("stars:forecast");
-        foreach (string culture in Core.Research.Cultures.OrderBy(c => Research.Progress(State,c).Solves).ThenBy(_ => random.Next()))
+        foreach (string culture in Core.Research.Cultures.Where(c=>Core.Journey.IsOpen(State,c)).OrderBy(c => Research.Progress(State,c).Solves).ThenBy(_ => random.Next()))
         foreach (string name in SiteLocations[culture].OrderBy(_ => random.Next()))
         {
             if (name == "Railroad" && Today + 1 < 31) continue;
@@ -146,7 +147,7 @@ public sealed partial class ModEntry
     {
         if (!Core.UnusualRelics.CompleteStars(State,site)) return;
         Research.Progress(State,site.Culture).Fragments += 8;
-        State.Experience += 30;
+        State.Experience += Mastery.HistoryReward(State,30);
         Notify(T("unusual.stars-complete"));
     }
 

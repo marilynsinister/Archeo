@@ -11,7 +11,7 @@ public sealed partial class ModEntry
 {
     private readonly PerScreen<ResonancePulse> resonance = new(() => new());
     internal IEnumerable<DigSite> ActiveDigSites(string location)
-        => State.Sites.Where(s => s.Location == location && s.Expires >= Today && s.Points.Any(p => !p.Dug));
+        => State.Sites.Where(s => s.Location == location && s.Expires >= Today && s.Points.Any(p => !p.Dug) && Core.Journey.VisibleSite(State, s));
 
     private bool OccupiedByDigPoint(string location, Vector2 tile, DigSite? except = null)
         => ActiveDigSites(location).Where(s => s != except).SelectMany(s => s.Points).Any(p => !p.Dug && Vector2.DistanceSquared(tile, new(p.X, p.Y)) < 4);
@@ -19,10 +19,13 @@ public sealed partial class ModEntry
     private (DigSite Site, DigPoint Point)? FindSurveyTarget(GameLocation location)
     {
         var sites = ActiveDigSites(location.Name).ToList();
-        foreach (var site in sites) RepairSite(site, location);
-        return sites.SelectMany(site => site.Points.Where(p => !p.Dug && ValidDigTile(location, new(p.X, p.Y)))
+        var route = RoutesFromPlayer(location);
+        var reachable = route.Reachable.Select(p => new Vector2(p.X, p.Y)).ToHashSet();
+        foreach (var site in sites) RepairSite(site, location, reachable);
+        return sites.SelectMany(site => site.Points.Where(p => !p.Dug && ValidDigTile(location, new(p.X, p.Y)) && route.Contains(new(p.X, p.Y)))
                 .Select(point => (Site: site, Point: point)))
-            .OrderBy(p => Shipwreck.Kinds.Contains(p.Site.EventKind) || ResidentStories.Kinds.Contains(p.Site.EventKind) ? 0 : p.Site.EventKind.Length > 0 ? 1 : 2)
+            .OrderBy(p => p.Site.Key == signals.Value.SiteKey && new Vector2(p.Point.X,p.Point.Y) == signals.Value.Target ? 0 : 1)
+            .ThenBy(p => p.Point.Revealed ? 0 : 1)
             .ThenBy(p => Vector2.DistanceSquared(Game1.player.Tile, new(p.Point.X, p.Point.Y)))
             .Select(p => ((DigSite Site, DigPoint Point)?)p).FirstOrDefault();
     }
@@ -30,7 +33,7 @@ public sealed partial class ModEntry
     private void RememberWeather()
     {
         var valley = Game1.getFarm();
-        WeatherExpeditions.Observe(State.Weather, Today, valley.IsRainingHere(), valley.IsLightningHere(), Config.EnableWeatherEvents,
+        WeatherExpeditions.Observe(State.Weather, Today, valley.IsRainingHere(), valley.IsLightningHere(), Config.EnableWeatherEvents && State.Journey.Started && State.Finds >= 4,
             State.Sites.Any(s => WeatherExpeditions.Kinds.Contains(s.EventKind) && s.Expires >= Today && s.Points.Any(p => !p.Dug)), Config.WeatherSiteLifetimeDays, Config.WeatherEventCooldownDays);
     }
 
@@ -69,7 +72,7 @@ public sealed partial class ModEntry
     {
         if (!WeatherExpeditions.Complete(State, site)) return;
         Research.Progress(State, site.Culture).Fragments += 12;
-        State.Experience += 45;
+        State.Experience += Mastery.HistoryReward(State,45);
         Notify(T("weather.completed", new { name = T("weather.name." + site.EventKind) }));
         if (State.Weather.PendingRewards.Contains(WeatherExpeditions.Artifact(site.EventKind))) Notify(T("weather.reward-waiting"));
     }

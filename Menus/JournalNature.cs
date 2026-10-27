@@ -10,12 +10,15 @@ internal sealed partial class JournalMenu
     private void DrawNature(SpriteBatch b)
     {
         buttons.Remove("tools");
-        if (!NaturalEvents.Kinds.Contains(selected)) selected = "snow";
+        var kinds=NaturalEvents.Kinds.Where(k=>mod.State.Nature.Completed.ContainsKey(k) || mod.State.Nature.Leads.Any(p=>p.Kind==k)
+            || mod.State.Sites.Any(p=>p.EventKind==k) || mod.State.Nature.PendingRewards.Contains(NaturalEvents.Artifact(k))).ToArray();
+        if(kinds.Length==0) { DrawPageText(b,mod.T("nature.title"),mod.T("journey.chapters-note"),right.Bottom-20); return; }
+        if (!kinds.Contains(selected)) selected = kinds[0];
         Text(b,mod.T("nature.title"),left.X+12,left.Y+8,Ink,fontScale*1.08f);
         int cardH = Math.Min(95,(left.Height-45)/3);
-        for (int i=0;i<NaturalEvents.Kinds.Length;i++)
+        for (int i=0;i<kinds.Length;i++)
         {
-            string kind = NaturalEvents.Kinds[i];
+            string kind = kinds[i];
             var rect = new Rectangle(left.X+8,left.Y+44+i*cardH,left.Width-16,cardH-6);
             Button(b,"nature:"+kind,mod.T("nature.name."+kind),rect,active:selected==kind);
         }
@@ -39,7 +42,7 @@ internal sealed partial class JournalMenu
         maxScroll=Math.Max(0,lines.Count-visible);
         scroll=Math.Clamp(scroll,0,maxScroll);
         for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++) Text(b,lines[i],x,top+(i-scroll)*lineH);
-        if(maxScroll>0) Text(b,(scroll>0?"↑ ":"")+(scroll<maxScroll?"↓":""),right.Right-24,bottom-16,Muted,.65f);
+        if(maxScroll>0) Text(b,(scroll>0?"^ ":"")+(scroll<maxScroll?"v":""),right.Right-24,bottom-16,Muted,.65f);
         if(pending) Button(b,"claim:"+artifact.Id,mod.T("weather.claim"),new Rectangle(x,right.Bottom-42,w,34));
     }
 }

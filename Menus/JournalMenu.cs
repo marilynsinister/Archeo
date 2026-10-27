@@ -12,6 +12,8 @@ internal sealed partial class JournalMenu : IClickableMenu
 {
     private readonly ModEntry mod;
     private readonly Dictionary<string, Rectangle> buttons = new();
+    private readonly Dictionary<string, Rectangle> tabBounds = new();
+    private readonly HashSet<string> disabledButtons = new();
     private string tab = "overview";
     private string selected = "";
     private bool keystone;
@@ -21,15 +23,15 @@ internal sealed partial class JournalMenu : IClickableMenu
     private Rectangle left;
     private Rectangle right;
     private float fontScale;
-    private static readonly Color Ink = new(71, 47, 35);
-    private static readonly Color Muted = new(131, 105, 78);
-    private static readonly Color Paper = new(244, 226, 184);
-    private static readonly string[] Tabs = { "overview", "valley", "dwarf", "sea", "workshop", "weather", "gallery", "shipwreck", "nature", "residents" };
+    private static readonly Color Ink = new(62, 52, 39);
+    private static readonly Color Muted = new(116, 108, 85);
+    private static readonly Color Paper = new(247, 235, 204);
+    private string[] Tabs => mod.State.Journey.Started ? new[] { "overview", "catalog", "chapters", "equipment", "settings" } : new[] { "overview", "settings" };
 
     public JournalMenu(ModEntry mod, string initialTab = "overview") : base(0, 0, 100, 100, true)
     {
         this.mod = mod;
-        tab = initialTab;
+        tab = AccessibleTab(initialTab) ? initialTab : "overview";
         Layout();
     }
 
@@ -39,20 +41,18 @@ internal sealed partial class JournalMenu : IClickableMenu
         height = Math.Min(760, Game1.uiViewport.Height - 40);
         xPositionOnScreen = (Game1.uiViewport.Width - width) / 2;
         yPositionOnScreen = (Game1.uiViewport.Height - height) / 2;
-        fontScale = width < 1000 || height < 650 ? .76f : .88f;
-        bool twoRows = width < 1000 || Tabs.Length > 8;
-        int bodyY = yPositionOnScreen + (twoRows ? 164 : 142);
-        int bodyH = height - (twoRows ? 228 : 206);
+        fontScale = width < 1000 || height < 650 ? .82f : .92f;
+        int bodyY = yPositionOnScreen + 148;
+        int bodyH = height - 212;
         int leftW = (int)((width - 68) * .43f);
         left = new Rectangle(xPositionOnScreen + 28, bodyY, leftW, bodyH);
         right = new Rectangle(left.Right + 24, bodyY, width - leftW - 80, bodyH);
         initializeUpperRightCloseButton();
-        buttons.Clear();
-        int columns = twoRows ? (Tabs.Length + 1) / 2 : Tabs.Length;
+        buttons.Clear(); tabBounds.Clear();
+        int columns = Tabs.Length;
         int tabW = (width - 64) / columns;
         for (int i = 0; i < Tabs.Length; i++)
-            buttons["tab:" + Tabs[i]] = new Rectangle(xPositionOnScreen + 32 + tabW * (i % columns), yPositionOnScreen + 87 + (i / columns) * 34, tabW - 8, twoRows ? 30 : 42);
-        buttons["tools"] = new Rectangle(left.X + 12, left.Bottom - 48, left.Width - 24, 38);
+            tabBounds["tab:" + Tabs[i]] = new Rectangle(xPositionOnScreen + 32 + tabW * i, yPositionOnScreen + 98, tabW - 8, 34);
     }
 
     public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds) => Layout();
@@ -99,39 +99,39 @@ internal sealed partial class JournalMenu : IClickableMenu
     private void Button(SpriteBatch b, string id, string label, Rectangle rect, bool enabled = true, bool active = false)
     {
         buttons[id] = rect;
+        if (!enabled) disabledButtons.Add(id);
         bool hovered = rect.Contains(Game1.getMouseX(), Game1.getMouseY());
-        Color color = !enabled ? new(209, 195, 166) : active ? new(211, 179, 121) : hovered ? new(238, 207, 148) : new(230, 208, 163);
-        b.Draw(Game1.staminaRect, rect, new Color(130, 94, 58));
+        Color color = !enabled ? new(222, 215, 195) : active ? new(194, 209, 178) : hovered ? new(236, 222, 183) : new(239, 226, 195);
+        b.Draw(Game1.staminaRect, rect, active ? new Color(91, 118, 91) : new Color(160, 142, 110));
         b.Draw(Game1.staminaRect, new Rectangle(rect.X + 2, rect.Y + 2, rect.Width - 4, rect.Height - 4), color);
         Center(b, label, rect, enabled ? Ink : Muted, Math.Min(fontScale, (rect.Width - 16f) / Math.Max(1, Game1.smallFont.MeasureString(label).X)));
     }
 
     public override void draw(SpriteBatch b)
     {
+        if (tabBounds.Count != Tabs.Length) Layout();
+        if (!AccessibleTab(tab)) tab = "overview";
+        buttons.Clear(); disabledButtons.Clear(); maxScroll = 0;
         b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height), Color.Black * .65f);
+        b.Draw(Game1.staminaRect, new Rectangle(xPositionOnScreen+10,yPositionOnScreen+12,width,height), Color.Black*.24f);
         drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
         b.Draw(Game1.staminaRect, new Rectangle(xPositionOnScreen + 16, yPositionOnScreen + 16, width - 32, height - 32), Paper);
-        b.Draw(Game1.staminaRect, new Rectangle(right.X - 13, left.Y, 2, left.Height), new Color(184, 153, 111));
+        b.Draw(Game1.staminaRect, new Rectangle(left.X,left.Y,left.Width,left.Height), new Color(242,229,194));
+        b.Draw(Game1.staminaRect, new Rectangle(right.X - 14, left.Y, 4, left.Height), new Color(209,191,154));
         // Binding stitches and page edges keep the journal distinct from a standard inventory menu.
         for (int y = left.Y + 10; y < left.Bottom; y += 23)
             b.Draw(Game1.staminaRect, new Rectangle(right.X - 16, y, 8, 2), new Color(158, 117, 75));
-        Text(b, mod.T("journal.title"), xPositionOnScreen + 34, yPositionOnScreen + 27, Ink, fontScale * 1.28f);
-        string counter = mod.T("journal.counter", new { count = mod.State.Restored.Count, total = mod.Research.Artifacts.Count, level = Research.Level(mod.State.Experience) });
-        Text(b, counter, xPositionOnScreen + 36, yPositionOnScreen + 59, Muted, fontScale * .83f);
+        b.Draw(mod.Atlas,new Vector2(xPositionOnScreen+34,yPositionOnScreen+29),Sprite(21),Color.White,0,Vector2.Zero,2.5f,SpriteEffects.None,1);
+        Text(b, mod.T("journey.book-title"), xPositionOnScreen + 86, yPositionOnScreen + 28, Ink, fontScale * 1.28f);
+        string counter = mod.T("journey.book-counter", new { count = mod.State.Restored.Count, level = Research.Level(mod.State.Experience) });
+        Text(b, counter, xPositionOnScreen + 88, yPositionOnScreen + 62, Muted, fontScale * .83f);
         foreach (string key in Tabs)
-            Button(b, "tab:" + key, mod.T(key == "overview" ? "journal.overview" : key is "workshop" or "weather" or "gallery" or "shipwreck" or "nature" or "residents" ? key + ".tab" : "culture." + key), buttons["tab:" + key], active: tab == key);
-        buttons.Remove("restore"); buttons.Remove("keystone"); buttons.Remove("donate"); buttons.Remove("use");
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("artifact:")).ToList()) buttons.Remove(key);
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("story:")).ToList()) buttons.Remove(key);
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("claim:")).ToList()) buttons.Remove(key);
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("gallery:")).ToList()) buttons.Remove(key);
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("ship:")).ToList()) buttons.Remove(key);
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("culture-page:")).ToList()) buttons.Remove(key);
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("nature:")).ToList()) buttons.Remove(key);
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("resident:")).ToList()) buttons.Remove(key);
-        foreach (string key in buttons.Keys.Where(p => p.StartsWith("field:")).ToList()) buttons.Remove(key);
-        if (tab == "overview") DrawOverview(b); else if (tab == "workshop") DrawWorkshop(b); else if (tab == "weather") DrawWeather(b); else if (tab == "gallery") DrawGallery(b); else if (tab == "shipwreck") DrawShipwreck(b); else if (tab == "nature") DrawNature(b); else if (tab == "residents") DrawResidents(b); else DrawCulture(b);
-        Text(b, mod.T("journal.footer", new { key = mod.Config.SurveyKey.ToString() }), xPositionOnScreen + 34, yPositionOnScreen + height - 43, Muted, fontScale * .82f);
+            Button(b, "tab:" + key, mod.T("journey.nav."+key), tabBounds["tab:" + key], active: TabSection(tab) == key);
+        if (TabSection(tab) != tab) Button(b,"book:back",mod.T("journey.back"),new Rectangle(xPositionOnScreen+width-174,yPositionOnScreen+47,138,28));
+        if (tab == "overview" && !mod.State.Journey.Started) DrawInvitation(b); else if (tab == "overview") DrawOverview(b); else if (tab == "museum") DrawMuseum(b); else if (tab == "frontiers") DrawFrontiers(b); else if (tab == "equipment") DrawEquipment(b); else if (tab == "chapters") DrawChapters(b); else if (tab == "catalog") DrawCatalog(b); else if (tab == "mastery") DrawMastery(b); else if (tab == "settings") DrawSettings(b); else if (tab == "workshop") DrawWorkshop(b); else if (tab == "weather") DrawWeather(b); else if (tab == "gallery") DrawGallery(b); else if (tab == "shipwreck") DrawShipwreck(b); else if (tab == "nature") DrawNature(b); else if (tab == "residents") DrawResidents(b); else DrawCulture(b);
+        DrawControllerFocus(b);
+        string footer = mod.T(controllerActive ? "journey.controller-footer" : "journey.footer");
+        Text(b, footer, xPositionOnScreen + 34, yPositionOnScreen + height - 43, Muted, Math.Min(fontScale * .82f, (width - 68f) / Math.Max(1, Game1.smallFont.MeasureString(footer).X)));
         upperRightCloseButton?.draw(b);
         drawMouse(b);
         if (hover != "") drawHoverText(b, hover, Game1.smallFont);
@@ -142,7 +142,7 @@ internal sealed partial class JournalMenu : IClickableMenu
         buttons.Remove("tools");
         var progress = mod.Research.Progress(mod.State, tab);
         var project = mod.Research.Project(mod.State, tab, mod.RandomFor("project:" + tab));
-        var artifacts = mod.Research.Artifacts.Where(p => p.Culture == tab).OrderBy(p => p.Rarity).ToList();
+        var artifacts = CultureItems();
         if (!artifacts.Any(p => p.Id == selected)) selected = project.Id;
         Text(b, mod.T("journal.fragments", new { count = progress.Fragments, keys = progress.Keystones }), left.X + 12, left.Y + 6, Muted, fontScale * .88f);
         int pageSize = CulturePageSize(artifacts.Count);
@@ -152,19 +152,9 @@ internal sealed partial class JournalMenu : IClickableMenu
         int y = left.Y + 38;
         foreach (var artifact in artifacts.Skip(page * pageSize).Take(pageSize))
         {
-            bool known = mod.State.Restored.ContainsKey(artifact.Id) || artifact.Id == project.Id || PendingArtifact(artifact.Id);
+            bool known = JournalCatalog.IsKnown(mod.State, artifact);
             var rect = new Rectangle(left.X + 6, y, left.Width - 12, rowH - 3);
-            buttons["artifact:" + artifact.Id] = rect;
-            if (selected == artifact.Id) b.Draw(Game1.staminaRect, rect, new Color(220, 193, 145));
-            else if (rect.Contains(Game1.getMouseX(), Game1.getMouseY())) b.Draw(Game1.staminaRect, rect, new Color(235, 215, 176));
-            b.Draw(mod.Atlas, new Vector2(rect.X + 8, rect.Y + (rect.Height - 32) / 2), Sprite(artifact.Sprite), known ? Color.White : new Color(67, 55, 43), 0, Vector2.Zero, 2, SpriteEffects.None, 1);
-            string name = known ? mod.ArtifactName(artifact) : mod.T("journal.unknown");
-            float nameScale = Math.Min(fontScale, (rect.Width - 61f) / Math.Max(1, Game1.smallFont.MeasureString(name).X));
-            Text(b, name, rect.X + 49, rect.Y + 4, known ? ModEntry.RarityColor(artifact.Rarity) : Muted, nameScale);
-            string status = mod.State.Donated.Contains(artifact.Id) ? mod.T("journal.donated")
-                : mod.State.Restored.ContainsKey(artifact.Id) ? mod.T("journal.restored")
-                : project.Id == artifact.Id ? mod.T("journal.current") : ResidentStories.Sources.Contains(artifact.Source) ? mod.T("residents.status") : NaturalEvents.Kinds.Contains(artifact.Source) ? mod.T("nature.status") : artifact.Source != "research" ? mod.T("weather.status") : mod.T("journal.undiscovered");
-            Text(b, status, rect.X + 49, rect.Y + rect.Height - (int)(24 * fontScale), Muted, fontScale * .72f);
+            DrawArtifactRow(b, artifact, rect, known);
             y += rowH;
         }
         if (pages > 1)
@@ -199,12 +189,11 @@ internal sealed partial class JournalMenu : IClickableMenu
         int textTop = right.Y + 108;
         int textBottom = actionY - (artifact.Id == project.Id ? 94 : 14);
         string content = known ? mod.T("artifact." + artifact.Id + ".description") + "\n\n" + (restored ? mod.T("artifact." + artifact.Id + ".lore") : mod.T("journal.lore-locked"))
-            : artifact.Source == "research" ? mod.T("journal.hidden-hint", new { culture = mod.CultureName(artifact.Culture) })
-            : mod.T((ResidentStories.Sources.Contains(artifact.Source) ? "residents.artifact-hint." : NaturalEvents.Kinds.Contains(artifact.Source) ? "nature.artifact-hint." : "weather.artifact-hint.") + artifact.Source);
-        if (restored && UnusualRelics.Effects.Contains(artifact.Effect))
+            : artifact.Source == "research" ? mod.T("journal.hidden-hint", new { culture = mod.CultureName(artifact.Culture) }) : "";
+        content += "\n\n" + mod.ArtifactHint(artifact);
+        if (restored && artifact.Effect is not ("" or "lamp"))
         {
-            int days = mod.RelicDaysUntilReady(artifact);
-            content = mod.T(days == 0 ? "unusual.ready" : "unusual.ready-in",new { days }) + "\n\n" + content;
+            content = mod.RelicStatus(artifact) + "\n" + mod.T(Game1.player.Items.Any(p => p?.QualifiedItemId == ModEntry.QualifiedId(artifact)) ? "catalog.carried" : "message.bring-artifact") + "\n\n" + content;
         }
         var lines = Wrap(content, w).ToList();
         int lineH = (int)(Game1.smallFont.LineSpacing * fontScale);
@@ -213,18 +202,20 @@ internal sealed partial class JournalMenu : IClickableMenu
         scroll = Math.Clamp(scroll, 0, maxScroll);
         for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], x, textTop + (i - scroll) * lineH);
         if (maxScroll > 0)
-            Text(b, (scroll > 0 ? "↑ " : "") + (scroll < maxScroll ? "↓" : ""), right.Right - 24, textBottom - 16, Muted, .65f);
+            Text(b, (scroll > 0 ? "^ " : "") + (scroll < maxScroll ? "v" : ""), right.Right - 24, textBottom - 16, Muted, .65f);
         if (artifact.Id == project.Id)
         {
-            int cost = Research.Required(artifact, progress, keystone);
+            int cost = Research.Required(artifact, progress, keystone, mod.State);
             var bar = new Rectangle(x, actionY - 75, w, 12);
             b.Draw(Game1.staminaRect, bar, new Color(190, 166, 123));
             b.Draw(Game1.staminaRect, new Rectangle(bar.X, bar.Y, (int)(bar.Width * Math.Min(1, progress.Fragments / (float)cost)), bar.Height), ModEntry.RarityColor(artifact.Rarity));
             Text(b, mod.T("journal.progress", new { count = progress.Fragments, cost }), x, actionY - 60, Muted, fontScale * .82f);
             Button(b, "keystone", mod.T(keystone ? "journal.key-on" : "journal.key-off", new { count = progress.Keystones }), new Rectangle(x, actionY - 34, w, 28), progress.Keystones > 0);
             bool canDonate = restored && Game1.currentLocation.Name == "ArchaeologyHouse" && !mod.State.Donated.Contains(artifact.Id);
-            Button(b, "restore", mod.T("journal.restore"), new Rectangle(x, actionY, canDonate ? w / 2 - 3 : w, 38), progress.Fragments >= cost);
+            bool canUse = restored && !canDonate && artifact.Effect is not ("" or "lamp");
+            Button(b, "restore", mod.T("journal.restore"), new Rectangle(x, actionY, canDonate || canUse ? w / 2 - 3 : w, 38), progress.Fragments >= cost);
             if (canDonate) Button(b, "donate", mod.T("journal.donate"), new Rectangle(x + w / 2 + 3, actionY, w / 2 - 3, 38));
+            else if (canUse) Button(b, "use", mod.T("journal.use"), new Rectangle(x + w / 2 + 3, actionY, w / 2 - 3, 38), mod.RelicDaysUntilReady(artifact) == 0 && Game1.player.Items.Any(p => p?.QualifiedItemId == ModEntry.QualifiedId(artifact)));
         }
         else if (pending)
             Button(b, "claim:" + artifact.Id, mod.T("weather.claim"), new Rectangle(x, actionY, w, 38));
@@ -233,7 +224,7 @@ internal sealed partial class JournalMenu : IClickableMenu
             if (Game1.currentLocation.Name == "ArchaeologyHouse" && !mod.State.Donated.Contains(artifact.Id))
                 Button(b, "donate", mod.T("journal.donate"), new Rectangle(x, actionY, w, 38));
             else if (artifact.Effect is not ("" or "lamp"))
-                Button(b, "use", mod.T("journal.use"), new Rectangle(x, actionY, w, 38));
+                Button(b, "use", mod.T("journal.use"), new Rectangle(x, actionY, w, 38), mod.RelicDaysUntilReady(artifact) == 0 && Game1.player.Items.Any(p => p?.QualifiedItemId == ModEntry.QualifiedId(artifact)));
             else
                 Paragraph(b, mod.T("journal.display"), new Rectangle(x, actionY - 10, w, 65), Muted);
         }
@@ -243,9 +234,23 @@ internal sealed partial class JournalMenu : IClickableMenu
     {
         if (upperRightCloseButton?.containsPoint(x, y) == true) { exitThisMenu(); return; }
         string? id = buttons.FirstOrDefault(p => p.Value.Contains(x, y)).Key;
-        if (id == null) return;
+        if (id != "catalog:search" && searchBox != null) searchBox.Selected = false;
+        if (id == null || disabledButtons.Contains(id)) return;
         Game1.playSound("smallSelect");
-        if (id.StartsWith("tab:")) { tab = id[4..]; selected = ""; scroll = 0; keystone = false; }
+        if (id.StartsWith("tab:")) SwitchTab(id[4..]);
+        else if(id.StartsWith("frontier:select:")){selected=id[16..];scroll=0;}
+        else if(id=="frontier:open")SwitchTab(selected);
+        else if (id == "book:back") SwitchTab(TabSection(tab));
+        else if (id == "book:kit") mod.ClaimFieldKit();
+        else if (id == "book:upgrade") mod.UpgradeInstrument();
+        else if (id.StartsWith("book:chapter:")) SwitchTab(id[13..]);
+        else if (id == "book:prev") chapterPage--;
+        else if (id == "book:next") chapterPage++;
+        else if (id is "book:equipment" or "tools") SwitchTab("equipment");
+        else if (id.StartsWith("catalog:")) HandleCatalogClick(id);
+        else if (id.StartsWith("mastery:")) HandleMasteryClick(id);
+        else if (id.StartsWith("settings:")) HandleSettingsClick(id);
+        else if(id.StartsWith("museum:"))HandleMuseumClick(id);
         else if (id.StartsWith("field:") && tab == "overview") HandleObjectiveClick(id);
         else if (id.StartsWith("artifact:")) { selected = id[9..]; scroll = 0; }
         else if (id == "tools" && tab == "overview") mod.ClaimTools();
@@ -265,6 +270,7 @@ internal sealed partial class JournalMenu : IClickableMenu
         }
         else if (id == "resident:archive") { residentArchive = !residentArchive; scroll = 0; }
         else if (id.StartsWith("nature:")) { selected = id[7..]; scroll = 0; }
+        else if(id is "gallery:prev" or "gallery:next")TurnGalleryPage(id=="gallery:next"?1:-1);
         else if (id.StartsWith("gallery:select:")) { selected = id[15..]; scroll = 0; }
         else if (id.StartsWith("gallery:reward:")) mod.ClaimCollection(id[15..]);
         else if (id == "gallery:craft") mod.CraftGallery();
@@ -272,13 +278,13 @@ internal sealed partial class JournalMenu : IClickableMenu
         else if (id == "ship:letter") { selected = selected == "letter" ? "" : "letter"; scroll = 0; }
         else if (id.StartsWith("culture-page:") && Research.Cultures.Contains(tab))
         {
-            var artifacts = mod.Research.Artifacts.Where(p => p.Culture == tab).OrderBy(p => p.Rarity).ToList();
+            var artifacts = CultureItems();
             int size = CulturePageSize(artifacts.Count), current = artifacts.FindIndex(p => p.Id == selected) / size;
             int next = current + (id.EndsWith("next") ? 1 : -1);
             if (next >= 0 && next * size < artifacts.Count) { selected = artifacts[next * size].Id; scroll = 0; }
         }
-        else if (id == "restore") { mod.Restore(tab, keystone); scroll = 0; }
-        else if (id == "keystone" && mod.Research.Progress(mod.State, tab).Keystones > 0) keystone = !keystone;
+        else if (id == "restore") { mod.Restore(mod.Research.Artifacts.First(p => p.Id == selected).Culture, keystone); scroll = 0; }
+        else if (id == "keystone" && mod.Research.Progress(mod.State, mod.Research.Artifacts.First(p => p.Id == selected).Culture).Keystones > 0) keystone = !keystone;
         else if (id == "donate") mod.Donate(mod.Research.Artifacts.First(p => p.Id == selected));
         else if (id == "use")
         {
@@ -286,17 +292,23 @@ internal sealed partial class JournalMenu : IClickableMenu
             exitThisMenu();
             mod.UseRelic(artifact);
         }
+        buttons.Clear(); disabledButtons.Clear();
     }
 
     public override void receiveScrollWheelAction(int direction) => scroll = Math.Clamp(scroll - Math.Sign(direction) * 2, 0, maxScroll);
 
     public override void receiveKeyPress(Keys key)
     {
+        if (CaptureSettingKey(key)) return;
+        if (searchBox?.Selected == true)
+        {
+            if (key is Keys.Escape or Keys.Enter or Keys.Tab) searchBox.Selected = false;
+            return;
+        }
         if (key == Keys.Escape) { exitThisMenu(); return; }
         if (key is Keys.Left or Keys.Right or Keys.Tab)
         {
-            tab = Tabs[(Array.IndexOf(Tabs, tab) + (key == Keys.Left ? Tabs.Length - 1 : 1)) % Tabs.Length];
-            selected = ""; scroll = 0; keystone = false;
+            SwitchTab(Tabs[(Array.IndexOf(Tabs, TabSection(tab)) + (key == Keys.Left ? Tabs.Length - 1 : 1)) % Tabs.Length]);
         }
         else if ((key is Keys.Up or Keys.Down) && tab == "overview")
         {
@@ -307,14 +319,18 @@ internal sealed partial class JournalMenu : IClickableMenu
             objectiveSelection = goals[next].Id;
             overviewGuide = false; scroll = 0;
         }
-        else if ((key is Keys.Up or Keys.Down) && Research.Cultures.Contains(tab))
+        else if ((key is Keys.Up or Keys.Down) && (Research.Cultures.Contains(tab) || tab == "catalog"))
         {
-            var items = mod.Research.Artifacts.Where(p => p.Culture == tab).OrderBy(p => p.Rarity).ToList();
+            var items = tab == "catalog" ? CatalogItems() : CultureItems();
+            if (items.Count == 0) return;
             int i = items.FindIndex(p => p.Id == selected);
             selected = items[(i + (key == Keys.Up ? items.Count - 1 : 1)) % items.Count].Id;
             scroll = 0;
         }
-        else if (key == Keys.Enter && Research.Cultures.Contains(tab)) mod.Restore(tab, keystone);
+        else if (key == Keys.PageUp || key == Keys.PageDown) receiveScrollWheelAction(key == Keys.PageUp ? 1 : -1);
+        else if (key == Keys.Enter && (Research.Cultures.Contains(tab) || tab == "catalog") && buttons.ContainsKey("restore") && !disabledButtons.Contains("restore")
+            && mod.State.Cultures.Values.Any(p => p.Project == selected))
+            mod.Restore(mod.Research.Artifacts.First(p => p.Id == selected).Culture, keystone);
         else if (key == Keys.Enter && tab == "overview")
         {
             var goal = mod.FieldObjectives().FirstOrDefault(p => p.Id == objectiveSelection);

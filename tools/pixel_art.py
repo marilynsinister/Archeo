@@ -437,6 +437,8 @@ from nature_content import GRIDS as NATURE_GRIDS
 GRIDS.update(NATURE_GRIDS)
 from resident_content import GRIDS as RESIDENT_GRIDS
 GRIDS.update(RESIDENT_GRIDS)
+from frontier_content import GRIDS as FRONTIER_GRIDS
+GRIDS.update(FRONTIER_GRIDS)
 
 
 def rgba(value):
@@ -456,7 +458,7 @@ def render_icon(name):
             if token not in PALETTE:
                 raise ValueError(f"{name}: unknown palette token {token!r} at {x}, {y}")
             result.putpixel((x, y), rgba(PALETTE[token]))
-    if name in UNUSUAL_GRIDS or name in NATURE_GRIDS or name in RESIDENT_GRIDS:
+    if name in UNUSUAL_GRIDS or name in NATURE_GRIDS or name in RESIDENT_GRIDS or name in FRONTIER_GRIDS:
         mask = result.getchannel("A")
         for y in range(1,15):
             for x in range(1,15):

@@ -9,7 +9,7 @@ from pixel_art import GRIDS, INK, render_icon, render_lamp, rgba
 root = Path(__file__).resolve().parents[1]
 catalog = json.loads((root / "assets/artifacts.json").read_text(encoding="utf-8"))
 atlas = Image.open(root / "assets/artifacts.png").convert("RGBA")
-assert atlas.size == (128, 80), atlas.size
+assert atlas.size == (128, 96), atlas.size
 slots = {p["Id"]: p["Sprite"] for p in catalog}
 slots.update(journal=21, surveyor=22, sparkle=23)
 assert set(slots) == set(GRIDS)
@@ -69,6 +69,28 @@ for name in ("gallery_case", "ancient_map", "mechanical_clock", "sea_mosaic"):
                 assert pixel == rgba(INK), (name, "broken outer contour", x, y)
 print("PASS: native collection case and 3 furniture rewards; source-exact pixels, binary alpha and complete dark contours.")
 
+from frontier_art import reward_sprite
+for name in ("caravan_panel", "island_totem"):
+    sprite=Image.open(root / "assets" / f"{name}.png").convert("RGBA")
+    assert sprite.size==(32,32) and sprite.tobytes()==reward_sprite(name).tobytes(), name
+    assert set(sprite.getchannel("A").tobytes())=={0,255}, name
+    for y in range(32):
+        for x in range(32):
+            if sprite.getpixel((x,y))[3] and any(not (0<=x+dx<32 and 0<=y+dy<32) or not sprite.getpixel((x+dx,y+dy))[3] for dx,dy in ((-1,0),(1,0),(0,-1),(0,1))):
+                assert sprite.getpixel((x,y))==rgba(INK), (name,"broken contour",x,y)
+print("PASS: 2 native frontier collection rewards; exact sources, binary alpha and dark contours.")
+
+from museum_art import NAMES as MUSEUM_NAMES,sprite as museum_sprite
+for name in MUSEUM_NAMES:
+    sprite=Image.open(root / "assets" / f"{name}.png").convert("RGBA")
+    assert sprite.size==(32,32) and sprite.tobytes()==museum_sprite(name).tobytes(),name
+    assert set(sprite.getchannel("A").tobytes())=={0,255},name
+    for y in range(32):
+        for x in range(32):
+            if sprite.getpixel((x,y))[3] and any(not(0<=x+dx<32 and 0<=y+dy<32) or not sprite.getpixel((x+dx,y+dy))[3] for dx,dy in ((-1,0),(1,0),(0,-1),(0,1))):
+                assert sprite.getpixel((x,y))==rgba(INK),(name,"broken contour",x,y)
+print("PASS: 2 native museum cases and exhibition pennant, exact pixels, binary alpha and dark contours.")
+
 from shipwreck_art import GRIDS as SHIP_GRIDS, icon as ship_icon, placed_bell
 ship_atlas=Image.open(root / "assets/shipwreck.png").convert("RGBA")
 assert ship_atlas.size == (64,16)
@@ -112,3 +134,14 @@ if previous.exists():
             current=Image.open(root / "assets/icons" / f"{name}.png").convert("RGBA")
             assert current.tobytes()==old.tobytes(), (name,"changed 0.8 icon pixels")
     print("PASS: all 33 previously released artifact icons retain their exact 0.8 pixels.")
+
+previous=root / "dist/Archeo-1.2.0.zip"
+if previous.exists():
+    with ZipFile(previous) as release:
+        for artifact in catalog:
+            name=artifact["Id"]
+            old=Image.open(BytesIO(release.read(f"Archeo/assets/icons/{name}.png"))).convert("RGBA")
+            current=Image.open(root / "assets/icons" / f"{name}.png").convert("RGBA")
+            assert old.tobytes()==current.tobytes(),(name,"changed 1.2 pixels")
+        assert release.read("Archeo/assets/artifacts.json")== (root/"assets/artifacts.json").read_bytes(),"changed 1.2 artifact catalog"
+    print("PASS: all 43 artifact icons and the complete 1.2 artifact catalog remain unchanged.")

@@ -26,6 +26,7 @@ public sealed class DigPoint
     public int X { get; set; }
     public int Y { get; set; }
     public bool Dug { get; set; }
+    public bool Revealed { get; set; }
 }
 
 public sealed class DigSite
@@ -64,4 +65,8 @@ public sealed class ArchaeologyState
     public NaturalProgress Nature { get; set; } = new();
     public ResidentProgress Residents { get; set; } = new();
     public string TrackedObjective { get; set; } = "";
+    public MasteryProgress Mastery { get; set; } = new();
+    public JourneyProgress Journey { get; set; } = new();
+    public FrontierProgress Frontiers { get; set; } = new();
+    public MuseumProgress Museum { get; set; } = new();
 }

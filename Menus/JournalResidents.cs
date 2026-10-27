@@ -12,12 +12,14 @@ internal sealed partial class JournalMenu
     private void DrawResidents(SpriteBatch b)
     {
         buttons.Remove("tools");
-        if (!ResidentStories.Sources.Contains(selected)) selected = "penny";
+        var stories=ResidentStories.All.Where(p=>ResidentStories.Stage(mod.State.Residents,p.Id)!=ResidentStage.Locked).ToArray();
+        if (stories.Length==0) { DrawPageText(b,mod.T("residents.title"),mod.T("journey.chapters-note"),right.Bottom-20); return; }
+        if (!stories.Any(p=>p.Id==selected)) selected = stories[0].Id;
         Text(b,mod.T("residents.title"),left.X+12,left.Y+8,Ink,fontScale*1.08f);
         int cardH = Math.Min(94,(left.Height-100)/3);
-        for (int i=0;i<ResidentStories.All.Length;i++)
+        for (int i=0;i<stories.Length;i++)
         {
-            var entry = ResidentStories.All[i];
+            var entry = stories[i];
             var rect = new Rectangle(left.X+8,left.Y+44+i*cardH,left.Width-16,cardH-6);
             Button(b,"resident:select:"+entry.Id,mod.ResidentName(entry),rect,active:entry.Id==selected);
         }
@@ -48,7 +50,7 @@ internal sealed partial class JournalMenu
                 text += "\n\n"+(site == null ? mod.T("residents.no-space") : mod.T("residents.active",new { location=mod.LocationName(site.Location),count=site.Points.Count(p=>!p.Dug),key=mod.Config.SurveyKey.ToString() }));
             }
             if (stage >= ResidentStage.Recovered) text += "\n\n"+mod.T("residents.note."+selected);
-            text += "\n\n"+mod.T("residents.reward",new { artifact=mod.ArtifactName(mod.Research.Artifacts.First(p=>p.Id==story.Artifact)),friendship=ResidentStories.Friendship,experience=ResidentStories.Experience,fragments=ResidentStories.Fragments });
+            text += "\n\n"+mod.T("residents.reward",new { artifact=mod.ArtifactName(mod.Research.Artifacts.First(p=>p.Id==story.Artifact)),friendship=Mastery.HistoryReward(mod.State,ResidentStories.Friendship),experience=Mastery.HistoryReward(mod.State,ResidentStories.Experience),fragments=ResidentStories.Fragments });
             if (stage >= ResidentStage.Reward) text += "\n\n"+mod.T("artifact."+story.Artifact+".description");
         }
         string? action = archive ? null : stage switch { ResidentStage.Clue=>"start",ResidentStage.Recovered=>"share",ResidentStage.Reward=>"claim",_=>null };
@@ -58,7 +60,7 @@ internal sealed partial class JournalMenu
         maxScroll=Math.Max(0,lines.Count-visible);
         scroll=Math.Clamp(scroll,0,maxScroll);
         for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++) Text(b,lines[i],x,top+(i-scroll)*lineH);
-        if(maxScroll>0) Text(b,(scroll>0?"↑ ":"")+(scroll<maxScroll?"↓":""),right.Right-24,bottom-16,Muted,.65f);
+        if(maxScroll>0) Text(b,(scroll>0?"^ ":"")+(scroll<maxScroll?"v":""),right.Right-24,bottom-16,Muted,.65f);
         if(action!=null) Button(b,"resident:action:"+selected+":"+action,mod.T("residents.action."+action),new Rectangle(x,right.Bottom-44,w,38),mod.CanResidentAction(selected,action));
     }
 }

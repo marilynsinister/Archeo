@@ -17,9 +17,10 @@ public sealed partial class ModEntry
     private const string GalleryMutexKey = Id + "/MuseumCases";
     internal const string CaptionKey = Id + "/Caption";
     internal Texture2D GalleryTexture { get; private set; } = null!;
+    private static readonly HashSet<string> GalleryCaseIds=new(StringComparer.Ordinal){ItemId("gallery_case"),ItemId("scholar_case"),ItemId("curator_case")};
     private bool galleryHooksReady;
     private bool galleryRequestPending;
-    internal static bool IsGallery(Furniture furniture) => furniture.ItemId == ItemId("gallery_case");
+    internal static bool IsGallery(Furniture furniture) => GalleryCaseIds.Contains(furniture.ItemId);
     internal NetMutex? GalleryMutex => Game1.player.team.globalInventoryMutexes.TryGetValue(GalleryMutexKey, out var mutex) ? mutex : null;
 
     private void InitializeGallery()
@@ -36,7 +37,7 @@ public sealed partial class ModEntry
     internal string GalleryCaption(Furniture furniture)
     {
         string caption = furniture.modData.TryGetValue(CaptionKey, out string? value) ? value : "general";
-        return T("gallery.caption." + (MuseumCollections.All.Any(p => p.Id == caption) ? caption : "general"));
+        return T("gallery.caption." + (MuseumCollections.All.Any(p => p.Id == caption)||LivingMuseum.Achievements.Any(a=>caption=="memory_"+a.Id) ? caption : "general"));
     }
 
     private bool TryGalleryInteraction(Vector2 tile, Vector2 cursor)
@@ -106,9 +107,14 @@ public sealed partial class ModEntry
             ("gallery_case", "other", "2 2", "2 1", 2, "gallery.case-name"),
             ("ancient_map", "painting", "2 2", "2 2", 0, "gallery.reward.ancient_map"),
             ("mechanical_clock", "other", "1 2", "1 1", 2, "gallery.reward.mechanical_clock"),
-            ("sea_mosaic", "painting", "2 2", "2 2", 0, "gallery.reward.sea_mosaic")
+            ("sea_mosaic", "painting", "2 2", "2 2", 0, "gallery.reward.sea_mosaic"),
+            ("caravan_panel", "painting", "2 2", "2 2", 0, "gallery.reward.caravan_panel"),
+            ("island_totem", "other", "2 2", "2 1", 2, "gallery.reward.island_totem"),
+            ("scholar_case", "other", "2 2", "2 1", 2, "museum.furniture.scholar_case"),
+            ("curator_case", "other", "2 2", "2 1", 2, "museum.furniture.curator_case"),
+            ("museum_banner", "painting", "2 2", "2 2", 0, "museum.furniture.museum_banner")
         })
-            data[ItemId(entry.Item1)] = $"{ItemId(entry.Item1)}/{entry.Item2}/{entry.Item3}/{entry.Item4}/1/0/{entry.Item5}/{T(entry.Item6)}/0/{Helper.ModContent.GetInternalAssetName("assets/" + entry.Item1 + ".png").Name}/true";
+            data[ItemId(entry.Item1)] = $"{ItemId(entry.Item1)}/{entry.Item2}/{entry.Item3}/{entry.Item4}/1/0/{entry.Item5}/{T(entry.Item6)}/0/{FurnitureTexture("assets/" + entry.Item1 + ".png")}/true";
     }
 
     private void InstallGalleryPatches(Harmony harmony)
@@ -143,7 +149,8 @@ public sealed partial class ModEntry
         var box = furniture.GetBoundingBox();
         Vector2 position = Game1.GlobalToLocal(Game1.viewport, new Vector2(box.X, box.Bottom - 128));
         float depth = Math.Clamp((box.Bottom - 8) / 10000f, 0, .999f);
-        b.Draw(GalleryTexture, position, null, Color.White * alpha, 0, Vector2.Zero, 4, SpriteEffects.None, depth);
+        var texture=furniture.ItemId==ItemId("gallery_case")?GalleryTexture:ItemRegistry.GetDataOrErrorItem(furniture.QualifiedItemId).GetTexture();
+        b.Draw(texture, position, null, Color.White * alpha, 0, Vector2.Zero, 4, SpriteEffects.None, depth);
         if (furniture.heldObject.Value is not Chest storage) return;
         for (int i = 0; i < Math.Min(MuseumCollections.CaseCapacity, storage.Items.Count); i++)
         {

@@ -328,5 +328,105 @@
     "Sprite": 35,
     "Effect": "compass",
     "Source": "willy"
+  },
+  {
+    "Id": "caravan_token",
+    "Culture": "calico",
+    "Rarity": 0,
+    "Cost": 20,
+    "Price": 220,
+    "Sprite": 36,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "sun_clay_lamp",
+    "Culture": "calico",
+    "Rarity": 0,
+    "Cost": 28,
+    "Price": 300,
+    "Sprite": 37,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "glass_route_bead",
+    "Culture": "calico",
+    "Rarity": 1,
+    "Cost": 38,
+    "Price": 550,
+    "Sprite": 38,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "sun_dial",
+    "Culture": "calico",
+    "Rarity": 2,
+    "Cost": 60,
+    "Price": 1100,
+    "Sprite": 39,
+    "Effect": "sunstep",
+    "Source": "research"
+  },
+  {
+    "Id": "oasis_vial",
+    "Culture": "calico",
+    "Rarity": 3,
+    "Cost": 80,
+    "Price": 1800,
+    "Sprite": 40,
+    "Effect": "oasis",
+    "Source": "research"
+  },
+  {
+    "Id": "island_spindle",
+    "Culture": "island",
+    "Rarity": 0,
+    "Cost": 20,
+    "Price": 220,
+    "Sprite": 41,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "obsidian_scale",
+    "Culture": "island",
+    "Rarity": 0,
+    "Cost": 28,
+    "Price": 300,
+    "Sprite": 42,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "woven_tide_band",
+    "Culture": "island",
+    "Rarity": 1,
+    "Cost": 38,
+    "Price": 550,
+    "Sprite": 43,
+    "Effect": "",
+    "Source": "research"
+  },
+  {
+    "Id": "turtle_charm",
+    "Culture": "island",
+    "Rarity": 2,
+    "Cost": 60,
+    "Price": 1100,
+    "Sprite": 44,
+    "Effect": "shellguard",
+    "Source": "research"
+  },
+  {
+    "Id": "tide_conch",
+    "Culture": "island",
+    "Rarity": 3,
+    "Cost": 80,
+    "Price": 1800,
+    "Sprite": 45,
+    "Effect": "tidecall",
+    "Source": "research"
   }
 ]

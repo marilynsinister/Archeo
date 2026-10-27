@@ -21,7 +21,7 @@ internal sealed partial class JournalMenu
         maxScroll = Math.Max(0, lines.Count - visible);
         scroll = Math.Clamp(scroll, 0, maxScroll);
         for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], left.X + 12, left.Y + 48 + (i - scroll) * lineH);
-        if (maxScroll > scroll) Text(b, "↓", left.Right - 24, left.Bottom - 24, Muted);
+        if (maxScroll > scroll) Text(b, "v", left.Right - 24, left.Bottom - 24, Muted);
 
         int cardH = (right.Height - 12) / 2;
         for (int index = 0; index < 2; index++)

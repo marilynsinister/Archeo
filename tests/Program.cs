@@ -8,8 +8,8 @@ var research = new Research(catalog);
 int checks = 0;
 void Check(bool condition, string description) { checks++; if (!condition) throw new Exception("FAIL: " + description); }
 
-Check(catalog.Count == 33 && catalog.Count(p => p.Source == "research") == 25, "25 research artifacts and 8 event or story relics");
-Check(catalog.Select(p => p.Sprite).Distinct().Count() == 33 && catalog.All(p => p.Sprite is not (21 or 22 or 23)), "unique sprites preserve original tool slots");
+Check(catalog.Count == 43 && catalog.Count(p => p.Source == "research") == 35, "35 research artifacts and 8 event or story relics");
+Check(catalog.Select(p => p.Sprite).Distinct().Count() == 43 && catalog.All(p => p.Sprite is not (21 or 22 or 23)), "unique sprites preserve original tool slots");
 foreach (string culture in Research.Cultures)
 {
     var state = new ArchaeologyState();
@@ -188,7 +188,7 @@ WeatherExpeditions.Observe(expired,4,false,false,true,false,3,4);
 Check(expired.Lead == null && !WeatherExpeditions.Attach(expired,new(){Kind="rain",Day=1,Expires=3},4), "unplaceable lead expires instead of persisting forever");
 Check(!WeatherExpeditions.IsValid(new WeatherProgress { PendingRewards=new(){"not-a-relic"} }), "invalid weather data is rejected for preservation");
 Check(legacySave.CollectionRewards.Count == 0, "old saves gain an empty collection reward ledger");
-Check(MuseumCollections.All.Length == 3 && MuseumCollections.All.Select(p => p.Reward).Distinct().Count() == 3, "three collections have distinct furniture rewards");
+Check(MuseumCollections.All.Length == 5 && MuseumCollections.All.Select(p => p.Reward).Distinct().Count() == 5, "five collections have distinct furniture rewards");
 foreach (var collection in MuseumCollections.All)
 {
     Check(collection.Artifacts.Length == 3 && collection.Artifacts.Distinct().Count() == 3, "three distinct requirements per collection");
@@ -647,7 +647,7 @@ leadsOverview.Sites.Add(FieldSite("rain","valley",52,"active-rain"));
 Check(FieldJournal.Build(leadsOverview,catalog,50).All(p=>p.Id!="lead:weather:rain:50"),"an active weather site suppresses its placement reminder");
 leadsOverview.Residents.Stages["penny"]=ResidentStage.Searching;
 Check(FieldJournal.Build(leadsOverview,catalog,50).Any(p=>p.Id=="resident:penny:wait" && p.Location=="Town" && p.Expires==int.MaxValue),"unplaced resident cache remains an unlimited objective");
-var allowedTabs=new[]{"overview","valley","dwarf","sea","workshop","weather","gallery","shipwreck","nature","residents"};
+var allowedTabs=new[]{"overview","valley","dwarf","sea","calico","island","frontiers","workshop","weather","gallery","shipwreck","nature","residents"};
 foreach(var goal in allGoals.Concat(reminderGoals).Concat(forecastGoals).Concat(disabledGoals))
 {
     Check(allowedTabs.Contains(goal.Tab),"every generated goal has an existing journal destination");
@@ -682,4 +682,9 @@ foreach(int count in new[]{0,1,3,4,5,7,9,12,33,80})
     int pages=Math.Max(1,(count+layout.PageSize-1)/layout.PageSize);
     Check(Enumerable.Range(0,pages).SelectMany(p=>Enumerable.Range(p*layout.PageSize,Math.Min(layout.PageSize,Math.Max(0,count-p*layout.PageSize)))).SequenceEqual(Enumerable.Range(0,count)),"every objective is reachable exactly once across pages at each supported height");
 }
-Console.WriteLine($"PASS: {checks} checks. Progression, objectives, navigation, compact layouts, deadlines, tracking, stories, rewards, migration and translations.");
+MasteryJournalChecks.Run(Check, catalog, research);
+JourneyChecks.Run(Check, catalog, research);
+FrontierChecks.Run(Check, catalog, research);
+MuseumChecks.Run(Check,catalog);
+Check(!en["mail.welcome"].Contains("config.json",StringComparison.OrdinalIgnoreCase) && !ru["mail.welcome"].Contains("config.json",StringComparison.OrdinalIgnoreCase),"Gunther's letter contains only in-world instructions");
+Console.WriteLine($"PASS: {checks} checks. Progression, mastery, catalog, controller navigation, objectives, layouts, stories, migration and translations.");

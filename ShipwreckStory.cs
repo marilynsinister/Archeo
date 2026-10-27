@@ -67,7 +67,7 @@ public sealed partial class ModEntry
     private void CompleteShipwreckSite(DigSite site)
     {
         if (!Core.Shipwreck.CompleteSite(State.Shipwreck, site, Today)) return;
-        State.Experience += site.EventKind == "ship_bottle" ? 60 : 120;
+        State.Experience += Mastery.HistoryReward(State,site.EventKind == "ship_bottle" ? 60 : 120);
         Notify(T(site.EventKind == "ship_bottle" ? "shipwreck.bottle-found" : "shipwreck.cache-found"));
     }
 
