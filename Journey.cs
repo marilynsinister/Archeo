@@ -28,18 +28,31 @@ public sealed partial class ModEntry
         State.Journey.Started = true;
         Core.Journey.Refresh(State, Research.Artifacts);
         RefreshSites(true);
+        if (first && OpeningStory.Active(State)) State.TrackedObjective = FieldObjectives().FirstOrDefault()?.Id ?? "";
         SaveState();
         Game1.playSound("reward");
-        if (first) Game1.drawObjectDialogue(T("journey.gunther"));
+        if (first) Game1.drawObjectDialogue(T(OpeningStory.Active(State) ? "opening.gunther-start" : "journey.gunther"));
         else Notify(T("journey.kit-replaced"));
         return true;
     }
 
     private bool TryIntroInteraction(Vector2 tile)
     {
-        if (State.Journey.Started || !InMuseum || Vector2.Distance(Game1.player.Tile, tile) > 3) return false;
+        if (!InMuseum || Vector2.Distance(Game1.player.Tile, tile) > 3) return false;
         string? action = Game1.currentLocation.doesTileHaveProperty((int)tile.X, (int)tile.Y, "Action", "Buildings");
-        return action?.Contains("Gunther", StringComparison.OrdinalIgnoreCase) == true && ClaimFieldKit();
+        if (action?.Contains("Gunther", StringComparison.OrdinalIgnoreCase) != true) return false;
+        return State.Journey.Started ? ConcludeOpeningStory() : ClaimFieldKit();
+    }
+
+    internal bool ConcludeOpeningStory()
+    {
+        if (!OpeningStory.Conclude(State, InMuseum)) return false;
+        Core.Journey.Refresh(State, Research.Artifacts);
+        DiscoverResidents();
+        RefreshSites(true);
+        SaveState();
+        Game1.drawObjectDialogue(T("opening.conversation"));
+        return true;
     }
 
     internal void UpgradeInstrument()

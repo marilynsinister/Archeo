@@ -16,6 +16,7 @@ public sealed partial class ModEntry
 
     private void DiscoverResidents()
     {
+        if (OpeningStory.Active(State)) return;
         foreach (string id in ResidentStories.Discover(State.Residents,State.Restored))
         {
             var story = ResidentStories.All.First(p => p.Id == id);
@@ -84,6 +85,7 @@ public sealed partial class ModEntry
             if (!Game1.player.couldInventoryAcceptThisItem(item)) { Notify(T("message.inventory-full")); return; }
             if (!Game1.player.addItemToInventoryBool(item)) return;
             ResidentStories.RecordClaim(State,id,true);
+            RefreshExpeditionSites();
             SaveState();
             Game1.playSound("reward");
             Notify(T("message.restored",new { name = ArtifactName(artifact) }));
@@ -91,6 +93,7 @@ public sealed partial class ModEntry
         }
         var npc = ResidentNearby(story);
         if (npc == null) return;
+        RecognizeStoryPartner(npc);
         if (action == "start")
         {
             if (!ResidentStories.Start(State.Residents,id,true)) return;

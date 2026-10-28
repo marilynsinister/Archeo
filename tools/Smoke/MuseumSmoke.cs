@@ -59,7 +59,9 @@ public sealed partial class SmokeEntry
         chest.Items[2]=held;
         var penny=Game1.getCharacterFromName("Penny");var home=penny.currentLocation;var position=penny.Position;
         home?.characters.Remove(penny);penny.currentLocation=Game1.currentLocation;Game1.currentLocation.characters.Add(penny);penny.setTileLocation(new Vector2(6,6));penny.isSleeping.Value=false;
+        int previousFriendship=Game1.player.friendshipData.TryGetValue("Penny",out var pennyFriendship)?pennyFriendship.Points:0;
         Check(mod.ReactToMuseumExhibition(penny)&&!mod.ReactToMuseumExhibition(penny),"nearby resident gives one standalone exhibition response");Game1.activeClickableMenu=null;
+        Check(Game1.player.friendshipData["Penny"].Points==previousFriendship+10,"first portrait conversation registers the resident and gives its friendship reward");
         Game1.currentLocation.characters.Remove(penny);penny.currentLocation=home;penny.Position=position;home?.characters.Add(penny);
         Game1.stats.DaysPlayed++;Call(mod,"ObserveMuseumDisplays");Game1.stats.DaysPlayed++;Call(mod,"ObserveMuseumDisplays");
         Check(mod.State.Museum.Exhibition.Ready,"three actual display observations complete the exhibition");

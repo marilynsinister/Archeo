@@ -62,11 +62,11 @@ internal sealed partial class JournalMenu
         int textTop = right.Y + 96;
         int bottom = right.Bottom - (action != null ? 58 : 12);
         var lines = Wrap(content, w).ToList();
-        int lineH = (int)(Game1.smallFont.LineSpacing * fontScale);
+        int lineH = ReadingLineHeight;
         int visible = Math.Max(1, (bottom - textTop) / lineH);
         maxScroll = Math.Max(0, lines.Count - visible);
         scroll = Math.Clamp(scroll, 0, maxScroll);
-        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], x, textTop + (i - scroll) * lineH);
+        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) ReadingText(b, lines[i], x, textTop + (i - scroll) * lineH);
         if (maxScroll > scroll) Text(b, "v", right.Right - 24, bottom - 16, Muted);
         if (action != null)
             Button(b, "ship:action:" + action, mod.T("shipwreck.action." + action), new Rectangle(x, right.Bottom - 44, w, 38), mod.CanShipwreckAction(action));

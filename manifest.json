@@ -1,8 +1,8 @@
 {
   "Name": "Archeo - Secrets of the Valley",
   "Author": "Archeo",
-  "Version": "1.3.0",
-  "Description": "Discover 43 artifacts across five cultures. Build a living museum with Gunther's weekly commissions, duplicate exchanges, temporary exhibitions, resident reactions and keepsake furniture.",
+  "Version": "1.4.3",
+  "Description": "Follow restored finds into new field routes through conversations with Gunther and Willy. Begin with a settler's cup, recover 43 artifacts across five cultures, build a living museum and explore two riddle expeditions.",
   "UniqueID": "Archeo.SecretsOfTheValley",
   "EntryDll": "Archeo.dll",
   "MinimumApiVersion": "4.1.0",

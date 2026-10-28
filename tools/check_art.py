@@ -145,3 +145,24 @@ if previous.exists():
             assert old.tobytes()==current.tobytes(),(name,"changed 1.2 pixels")
         assert release.read("Archeo/assets/artifacts.json")== (root/"assets/artifacts.json").read_bytes(),"changed 1.2 artifact catalog"
     print("PASS: all 43 artifact icons and the complete 1.2 artifact catalog remain unchanged.")
+
+from expedition_art import part as expedition_part,reward as expedition_reward
+expedition_atlas=Image.open(root / "assets/expedition_parts.png").convert("RGBA")
+assert expedition_atlas.size==(128,16)
+expedition_images=[]
+for i in range(8):
+    tile=expedition_atlas.crop((i*16,0,(i+1)*16,16))
+    assert tile.tobytes()==expedition_part(i).tobytes(),("expedition part",i)
+    assert all(not tile.getpixel((x,0))[3] and not tile.getpixel((x,15))[3] and not tile.getpixel((0,x))[3] and not tile.getpixel((15,x))[3] for x in range(16))
+    expedition_images.append(tile)
+for name in ("river_model","voyage_mobile"):
+    tile=Image.open(root / "assets" / f"{name}.png").convert("RGBA")
+    assert tile.size==(32,32) and tile.tobytes()==expedition_reward(name).tobytes(),name
+    expedition_images.append(tile)
+for tile in expedition_images:
+    assert set(tile.getchannel("A").tobytes())=={0,255}
+    for y in range(tile.height):
+        for x in range(tile.width):
+            if tile.getpixel((x,y))[3] and any(not(0<=x+dx<tile.width and 0<=y+dy<tile.height) or not tile.getpixel((x+dx,y+dy))[3] for dx,dy in ((-1,0),(1,0),(0,-1),(0,1))):
+                assert tile.getpixel((x,y))==rgba(INK),("expedition contour",x,y)
+print("PASS: 8 native 16x16 expedition parts and 2 native 32x32 rewards, exact sources, binary alpha and dark contours.")

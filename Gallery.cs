@@ -112,7 +112,9 @@ public sealed partial class ModEntry
             ("island_totem", "other", "2 2", "2 1", 2, "gallery.reward.island_totem"),
             ("scholar_case", "other", "2 2", "2 1", 2, "museum.furniture.scholar_case"),
             ("curator_case", "other", "2 2", "2 1", 2, "museum.furniture.curator_case"),
-            ("museum_banner", "painting", "2 2", "2 2", 0, "museum.furniture.museum_banner")
+            ("museum_banner", "painting", "2 2", "2 2", 0, "museum.furniture.museum_banner"),
+            ("river_model", "other", "2 2", "2 1", 2, "exp.reward.river"),
+            ("voyage_mobile", "painting", "2 2", "2 2", 0, "exp.reward.tide")
         })
             data[ItemId(entry.Item1)] = $"{ItemId(entry.Item1)}/{entry.Item2}/{entry.Item3}/{entry.Item4}/1/0/{entry.Item5}/{T(entry.Item6)}/0/{FurnitureTexture("assets/" + entry.Item1 + ".png")}/true";
     }

@@ -18,6 +18,7 @@ public sealed partial class ModEntry
     internal string SiteName(DigSite site) => site.EventKind == "stars" ? T("unusual.star-site") : Shipwreck.Kinds.Contains(site.EventKind) ? T("shipwreck.site." + site.EventKind)
         : WeatherExpeditions.Kinds.Contains(site.EventKind) ? T("weather.name." + site.EventKind)
         : ResidentStories.Kinds.Contains(site.EventKind) ? T("residents.site." + ResidentStories.All.First(p => p.SiteKind == site.EventKind).Id)
+        : PuzzleExpeditions.Kinds.Contains(site.EventKind)?ExpeditionTitle(PuzzleExpeditions.All.First(s=>site.EventKind==s.Kind(1)||site.EventKind==s.Kind(2)).Id)
         : NaturalEvents.Kinds.Contains(site.EventKind) ? T("nature.name." + site.EventKind) : CultureName(site.Culture);
 
     private void DiscoverShipwreck()

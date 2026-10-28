@@ -67,6 +67,10 @@ public sealed class ArchaeologyState
     public string TrackedObjective { get; set; } = "";
     public MasteryProgress Mastery { get; set; } = new();
     public JourneyProgress Journey { get; set; } = new();
+    public OpeningProgress Opening { get; set; } = new();
+    public RouteProgress Routes { get; set; } = new();
+    public LearningProgress Learning { get; set; } = new();
     public FrontierProgress Frontiers { get; set; } = new();
     public MuseumProgress Museum { get; set; } = new();
+    public ExpeditionProgress Expeditions { get; set; } = new();
 }

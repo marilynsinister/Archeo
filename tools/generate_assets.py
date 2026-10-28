@@ -127,6 +127,8 @@ from frontier_content import ARTIFACTS as FRONTIER_ARTIFACTS, RU as FRONTIER_RU,
 from frontier_art import generate as generate_frontiers
 from museum_content import RU as MUSEUM_RU, EN as MUSEUM_EN
 from museum_art import generate as generate_museum
+from expedition_content import RU as EXPEDITION_RU, EN as EXPEDITION_EN
+from expedition_art import generate as generate_expeditions
 
 RU.update(WORKSHOP_RU)
 EN.update(WORKSHOP_EN)
@@ -157,6 +159,8 @@ RU.update(FRONTIER_RU)
 EN.update(FRONTIER_EN)
 RU.update(MUSEUM_RU)
 EN.update(MUSEUM_EN)
+RU.update(EXPEDITION_RU)
+EN.update(EXPEDITION_EN)
 
 atlas = Image.new("RGBA", (128, 96))
 icons = []
@@ -203,4 +207,5 @@ generate_nature(ROOT)
 generate_residents(ROOT)
 generate_frontiers(ROOT)
 generate_museum(ROOT)
+generate_expeditions(ROOT)
 print(f"Generated {len(catalog)} native 16x16 artifact icons, 3 interface icons, and 2 native placed lamps.")

@@ -38,13 +38,14 @@ internal sealed partial class JournalMenu
 
     private void DrawPageText(SpriteBatch b, string title, string text, int bottom)
     {
-        Paragraph(b, title, new Rectangle(right.X + 12, right.Y + 8, right.Width - 24, 65));
-        int top = right.Y + 80, lineH = (int)(StardewValley.Game1.smallFont.LineSpacing * fontScale);
+        int titleHeight = Wrap(title, right.Width - 24, fontScale).Count() * (StardewValley.Game1.smallFont.LineSpacing + 4);
+        Paragraph(b, title, new Rectangle(right.X + 12, right.Y + 8, right.Width - 24, titleHeight));
+        int top = right.Y + 22 + titleHeight, lineH = ReadingLineHeight;
         var lines = Wrap(text, right.Width - 24).ToList();
         int visible = Math.Max(1, (bottom - top) / lineH);
         maxScroll = Math.Max(0, lines.Count - visible);
         scroll = Math.Clamp(scroll, 0, maxScroll);
-        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], right.X + 12, top + (i - scroll) * lineH);
+        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) ReadingText(b, lines[i], right.X + 12, top + (i - scroll) * lineH);
         if (maxScroll > 0) Text(b, (scroll > 0 ? "^ " : "") + (scroll < maxScroll ? "v" : ""), right.Right - 24, bottom - 16, Muted, .65f);
     }
 }

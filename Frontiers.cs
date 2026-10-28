@@ -21,6 +21,7 @@ public sealed partial class ModEntry
     {
         if(!e.IsLocalPlayer || states.Value==null)return;
         if(RefreshFrontiers())RefreshSites(true);
+        RefreshExpeditionSites();
         SaveState();
     }
 

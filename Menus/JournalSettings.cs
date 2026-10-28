@@ -8,7 +8,7 @@ namespace Archeo.Menus;
 
 internal sealed partial class JournalMenu
 {
-    private static readonly string[] Settings = { "hud", "tracker", "vanilla", "weather", "nature", "lifetime", "finds", "fragments", "weather-life", "weather-cooldown", "nature-life", "journal-key" };
+    private static readonly string[] Settings = { "text-size", "hud", "tracker", "vanilla", "weather", "nature", "lifetime", "finds", "fragments", "weather-life", "weather-cooldown", "nature-life", "journal-key" };
     private int settingsPage;
     private string settingSelection = "hud";
     private string bindingSetting = "";
@@ -24,7 +24,8 @@ internal sealed partial class JournalMenu
             "weather" => Toggle(c.EnableWeatherEvents), "nature" => Toggle(c.EnableNatureEvents),
             "lifetime" => c.SiteLifetimeDays.ToString(), "finds" => c.FindsPerSite.ToString(), "fragments" => c.FragmentMultiplier.ToString("0.##"),
             "weather-life" => c.WeatherSiteLifetimeDays.ToString(), "weather-cooldown" => c.WeatherEventCooldownDays.ToString(), "nature-life" => c.NatureSiteLifetimeDays.ToString(),
-            "journal-key" => c.JournalKey.ToString(), "survey-key" => c.SurveyKey.ToString(), _ => ""
+            "journal-key" => c.JournalKey.ToString(), "survey-key" => c.SurveyKey.ToString(),
+            "text-size" => Math.Round(c.JournalTextScale * 100) + "%", _ => ""
         };
     }
 
@@ -68,6 +69,7 @@ internal sealed partial class JournalMenu
             var c = mod.Config;
             switch (settingSelection)
             {
+                case "text-size": c.JournalTextScale = MathF.Round(c.JournalTextScale + delta * .15f, 2); break;
                 case "hud": c.ShowHud = !c.ShowHud; break;
                 case "tracker": c.ShowTrackedObjective = !c.ShowTrackedObjective; break;
                 case "vanilla": c.EnableVanillaSpotFragments = !c.EnableVanillaSpotFragments; break;

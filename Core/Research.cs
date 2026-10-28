@@ -21,15 +21,16 @@ public sealed class Research
     {
         if (state.Version != 1 || state.Cultures == null || state.Restored == null || state.Donated == null
             || state.LastUse == null || state.Sites == null || state.VanillaSpots == null || !Workshop.IsValid(state.Workshop) || !WeatherExpeditions.IsValid(state.Weather)
-            || state.CollectionRewards == null || state.CollectionRewards.Any(id => !MuseumCollections.All.Any(p => p.Id == id)) || !Shipwreck.IsValid(state.Shipwreck)
+            || state.CollectionRewards == null || state.CollectionRewards.Any(id => !MuseumCollections.All.Any(p => p.Id == id)) || !Shipwreck.IsValid(state.Shipwreck) || !OpeningStory.IsValid(state.Opening) || !RouteStories.IsValid(state.Routes)
             || !UnusualRelics.IsValid(state.Stars) || !NaturalEvents.IsValid(state.Nature) || !ResidentStories.IsValid(state.Residents)
-            || state.TrackedObjective == null || state.TrackedObjective.Length > 2048 || !Mastery.IsValid(state.Mastery, state.Experience) || !Journey.IsValid(state.Journey) || state.Frontiers == null || !LivingMuseum.IsValid(state.Museum))
+            || state.TrackedObjective == null || state.TrackedObjective.Length > 2048 || !Mastery.IsValid(state.Mastery, state.Experience) || !Journey.IsValid(state.Journey) || !FieldLearning.IsValid(state.Learning) || state.Frontiers == null || !LivingMuseum.IsValid(state.Museum) || !PuzzleExpeditions.IsValid(state.Expeditions))
             throw new InvalidDataException("Unsupported or incomplete archaeology save; preserve original data.");
         if (state.Experience < 0 || state.Finds < 0 || state.Restored.Any(p => p.Value < 1)
             || state.Cultures.Any(p => p.Value == null || p.Value.Fragments < 0 || p.Value.Keystones < 0 || p.Value.Solves < 0 || p.Value.SinceRare < 0)
             || state.Sites.Any(s => s == null || s.Points == null || !Cultures.Contains(s.Culture) || s.Points.Any(p => p == null)
-                || s.EventKind == null || s.EventId == null || s.EventKind != "" && (!(WeatherExpeditions.Kinds.Contains(s.EventKind) || Shipwreck.Kinds.Contains(s.EventKind) || s.EventKind == "stars" || NaturalEvents.Kinds.Contains(s.EventKind) || ResidentStories.Kinds.Contains(s.EventKind)) || s.EventId.Length == 0)
+                || s.EventKind == null || s.EventId == null || s.EventKind != "" && (!(WeatherExpeditions.Kinds.Contains(s.EventKind) || Shipwreck.Kinds.Contains(s.EventKind) || s.EventKind == "stars" || NaturalEvents.Kinds.Contains(s.EventKind) || ResidentStories.Kinds.Contains(s.EventKind) || PuzzleExpeditions.Kinds.Contains(s.EventKind)) || s.EventId.Length == 0)
                 || ResidentStories.Kinds.Contains(s.EventKind) && !ResidentStories.ValidSite(s)
+                || PuzzleExpeditions.Kinds.Contains(s.EventKind) && !PuzzleExpeditions.ValidSite(s)
                 || s.EventKind=="meteor" && (s.Location!="Farm" || s.AnchorX<0 || s.AnchorY<0 || s.Points.Any(p=>!NaturalEvents.WithinMeteorRadius(new(p.X,p.Y),s.AnchorX,s.AnchorY)))))
             throw new InvalidDataException("Invalid archaeology progress; preserve original data.");
     }
@@ -45,6 +46,11 @@ public sealed class Research
     public ArtifactDefinition Project(ArchaeologyState state, string culture, Random random)
     {
         var progress = Progress(state, culture);
+        if (OpeningStory.Active(state) && culture == "valley")
+        {
+            if (state.Opening.Stage == OpeningStage.Searching) progress.Project = OpeningStory.Artifact;
+            return Artifacts.Single(p => p.Id == OpeningStory.Artifact);
+        }
         var current = Artifacts.FirstOrDefault(p => p.Id == progress.Project && p.Culture == culture && p.Source == "research");
         if (current != null) return current;
         return NextProject(state, culture, random);
@@ -89,6 +95,8 @@ public sealed class Research
 
     public bool Restore(ArchaeologyState state, string culture, bool useKeystone, Random random, out ArtifactDefinition artifact)
     {
+        artifact = null!;
+        if (!OpeningStory.CanRestore(state, culture) || !RouteStories.AllowsField(state,culture)) return false;
         artifact = Project(state, culture, random);
         var progress = Progress(state, culture);
         int cost = Required(artifact, progress, useKeystone, state);
@@ -99,8 +107,9 @@ public sealed class Research
         progress.SinceRare = artifact.Rarity >= 2 ? 0 : progress.SinceRare + 1;
         state.Restored[artifact.Id] = state.Restored.GetValueOrDefault(artifact.Id) + 1;
         state.Experience += 30 + artifact.Rarity * 20;
+        OpeningStory.Restored(state, artifact.Id);
         progress.Project = "";
-        NextProject(state, culture, random);
+        if (state.Opening.Stage != OpeningStage.Restored) NextProject(state, culture, random);
         return true;
     }
 

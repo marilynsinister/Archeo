@@ -15,9 +15,9 @@ internal sealed partial class JournalMenu
     private void MuseumText(SpriteBatch b,string title,string text,int bottom,int start=62)
     {
         Text(b,title,right.X+12,right.Y+8,Ink,Math.Min(fontScale,(right.Width-24)/Math.Max(1,Game1.smallFont.MeasureString(title).X)));
-        var lines=Wrap(text,right.Width-24).ToList();int lineH=(int)(Game1.smallFont.LineSpacing*fontScale);
+        var lines=Wrap(text,right.Width-24).ToList();int lineH=ReadingLineHeight;
         int visible=Math.Max(1,(bottom-right.Y-start)/lineH);maxScroll=Math.Max(0,lines.Count-visible);scroll=Math.Clamp(scroll,0,maxScroll);
-        for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++)Text(b,lines[i],right.X+12,right.Y+start+(i-scroll)*lineH);
+        for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++)ReadingText(b, lines[i],right.X+12,right.Y+start+(i-scroll)*lineH);
         if(maxScroll>0)Text(b,(scroll>0?"^ ":"")+(scroll<maxScroll?"v":""),right.Right-20,bottom-18,Muted,.65f);
     }
     private void DrawMuseum(SpriteBatch b)

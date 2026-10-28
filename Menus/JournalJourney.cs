@@ -8,9 +8,9 @@ namespace Archeo.Menus;
 internal sealed partial class JournalMenu
 {
     private int chapterPage;
-    private bool AccessibleTab(string key) => key is "overview" or "settings" || mod.State.Journey.Started
+    private bool AccessibleTab(string key) => key is "overview" or "settings" or "help" || mod.State.Journey.Started
         && (key is "catalog" or "equipment" or "chapters" || Journey.IsOpen(mod.State, key));
-    private static string TabSection(string key) => key is "overview" or "catalog" or "equipment" or "settings" or "chapters" ? key
+    private static string TabSection(string key) => key is "help" or "opening" ? "overview" : key is "overview" or "catalog" or "equipment" or "settings" or "chapters" ? key
         : Research.Cultures.Contains(key) ? "catalog" : "chapters";
     private List<ArtifactDefinition> CultureItems() => mod.Research.Artifacts.Where(p=>p.Culture==tab && Journey.VisibleArtifact(mod.State,p)).OrderBy(p=>p.Rarity).ToList();
 
@@ -63,6 +63,10 @@ internal sealed partial class JournalMenu
 
     private string NextDiscoveryText()
     {
+        if (OpeningStory.Active(mod.State)) return mod.T(mod.State.Opening.Stage == OpeningStage.Restored ? "opening.goal.talk" : "opening.next-search");
+        if (RouteStories.Pending(mod.State) is { } route)
+            return mod.T("routes.goal."+route.Id,new{artifact=mod.ArtifactName(mod.Research.Artifacts.Single(p=>p.Id==route.Trigger))});
+        if (mod.State.Routes.Initialized && !Journey.IsOpen(mod.State,"sea") && Journey.IsOpen(mod.State,"dwarf")) return mod.T("routes.next-mountain");
         string key=mod.State.Restored.Count==0?"journey.next-first":!Journey.IsOpen(mod.State,"sea")?"journey.next-second":"journey.next-explore";
         return mod.T(key)+"\n\n"+mod.T("journey.chapters-note");
     }

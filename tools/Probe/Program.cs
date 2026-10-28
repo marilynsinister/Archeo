@@ -1,6 +1,14 @@
 using System.Reflection;
 using System.Runtime.Loader;
 string game = @"D:\Games\Steam\steamapps\common\Stardew Valley";
+if(args.Contains("--expedition-api"))
+{
+    using var image=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"Stardew Valley.dll"));
+    foreach(var name in new[]{"StardewValley.Game1","StardewValley.Locations.IslandHut","StardewValley.NPC"})
+    foreach(var method in image.MainModule.GetType(name).Methods.Where(m=>m.Name.Contains("CharacterCache")||m.Name=="getCharacterFromName"||name.EndsWith("NPC")&&m.IsConstructor||name.EndsWith("IslandHut")&&m.HasBody&&m.Body.Instructions.Any(i=>i.Operand?.ToString()=="Leo")))
+    {Console.WriteLine(method.FullName+" "+string.Join(",",method.Parameters.Select(p=>p.Name)));if(name.EndsWith("IslandHut")||name.EndsWith("Game1")&&!method.HasGenericParameters)foreach(var instruction in method.Body.Instructions.Take(100))Console.WriteLine(instruction);}
+    return;
+}
 if(args.Contains("--museum-api"))
 {
     using var image=Mono.Cecil.AssemblyDefinition.ReadAssembly(Path.Combine(game,"Stardew Valley.dll"));

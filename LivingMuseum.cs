@@ -87,7 +87,7 @@ public sealed partial class ModEntry
         if(Game1.eventUp)return false;
         npc??=NearbyMuseumVisitor();
         if(npc==null||NearbyMuseumVisitor()!=npc||!LivingMuseum.React(State.Museum,npc.Name,Today,true))return false;
-        string theme=State.Museum.Exhibition!.Theme;Game1.player.changeFriendship(10,npc);SaveState();
+        string theme=State.Museum.Exhibition!.Theme;RecognizeStoryPartner(npc);Game1.player.changeFriendship(10,npc);SaveState();
         Game1.activeClickableMenu=new DialogueBox(new Dialogue(npc,Id+"/Museum/"+theme,T("museum.reaction."+theme+"."+npc.Name)));return true;
     }
     private bool TryMuseumReaction(Vector2 tile)

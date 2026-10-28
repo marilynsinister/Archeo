@@ -115,6 +115,9 @@ foreach (var badState in new[] {
 var en = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(root,"i18n/default.json")))!;
 var ru = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(root,"i18n/ru.json")))!;
 Check(en.Keys.OrderBy(p=>p).SequenceEqual(ru.Keys.OrderBy(p=>p)), "translation key parity");
+foreach (string lesson in FieldLearning.Lessons)
+foreach (string suffix in new[] { "title", "tip", "text" })
+    Check(en.ContainsKey("learn." + suffix + "." + lesson), "field lesson translation: " + lesson + "." + suffix);
 foreach (string key in en.Keys)
 {
     var a = Regex.Matches(en[key], @"\{\{\w+\}\}").Select(m=>m.Value).OrderBy(p=>p);
@@ -647,7 +650,7 @@ leadsOverview.Sites.Add(FieldSite("rain","valley",52,"active-rain"));
 Check(FieldJournal.Build(leadsOverview,catalog,50).All(p=>p.Id!="lead:weather:rain:50"),"an active weather site suppresses its placement reminder");
 leadsOverview.Residents.Stages["penny"]=ResidentStage.Searching;
 Check(FieldJournal.Build(leadsOverview,catalog,50).Any(p=>p.Id=="resident:penny:wait" && p.Location=="Town" && p.Expires==int.MaxValue),"unplaced resident cache remains an unlimited objective");
-var allowedTabs=new[]{"overview","valley","dwarf","sea","calico","island","frontiers","workshop","weather","gallery","shipwreck","nature","residents"};
+var allowedTabs=new[]{"overview","valley","dwarf","sea","calico","island","frontiers","workshop","weather","gallery","museum","expeditions","shipwreck","nature","residents"};
 foreach(var goal in allGoals.Concat(reminderGoals).Concat(forecastGoals).Concat(disabledGoals))
 {
     Check(allowedTabs.Contains(goal.Tab),"every generated goal has an existing journal destination");
@@ -684,7 +687,11 @@ foreach(int count in new[]{0,1,3,4,5,7,9,12,33,80})
 }
 MasteryJournalChecks.Run(Check, catalog, research);
 JourneyChecks.Run(Check, catalog, research);
+OpeningChecks.Run(Check, catalog, research);
+RouteChecks.Run(Check, catalog, research);
+LearningChecks.Run(Check, catalog, research);
 FrontierChecks.Run(Check, catalog, research);
 MuseumChecks.Run(Check,catalog);
+ExpeditionChecks.Run(Check,catalog);
 Check(!en["mail.welcome"].Contains("config.json",StringComparison.OrdinalIgnoreCase) && !ru["mail.welcome"].Contains("config.json",StringComparison.OrdinalIgnoreCase),"Gunther's letter contains only in-world instructions");
 Console.WriteLine($"PASS: {checks} checks. Progression, mastery, catalog, controller navigation, objectives, layouts, stories, migration and translations.");

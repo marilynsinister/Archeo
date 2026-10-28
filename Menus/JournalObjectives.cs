@@ -17,7 +17,7 @@ internal sealed partial class JournalMenu
         if (!goals.Any(p => p.Id == objectiveSelection))
             objectiveSelection = FieldJournal.Tracked(mod.State,goals)?.Id ?? goals.FirstOrDefault()?.Id ?? "";
         Text(b,mod.T("field.title"),left.X+12,left.Y+7,Ink,fontScale*1.08f);
-        int helpW = Math.Min(145,left.Width/2);
+        int helpW = Math.Min(172,left.Width/2);
         Button(b,"field:guide",mod.T("field.guide"),new Rectangle(left.Right-helpW-8,left.Y+4,helpW,28),active:overviewGuide);
         var layout = ObjectiveListLayout.Create(left.Height,goals.Count);
         int size = layout.PageSize, pages = Math.Max(1,(goals.Count+size-1)/size);
@@ -58,15 +58,21 @@ internal sealed partial class JournalMenu
         else
         {
             text = mod.ObjectiveStatus(current!)+"\n\n"+mod.ObjectiveDescription(current!)+"\n\n"+mod.T("field.navigation");
+            if (mod.State.Restored.Count == 0)
+            {
+                string lesson = FieldLearning.Current(mod.State, mod.Research.Artifacts);
+                text = mod.ObjectiveStatus(current!) + "\n\n" + mod.T("learn.now", new { title = mod.T("learn.title." + lesson) }) + "\n"
+                    + mod.T("learn.tip." + lesson) + "\n\n" + mod.ObjectiveDescription(current!) + "\n\n" + mod.T("field.navigation");
+            }
             if (current!.Id == mod.State.TrackedObjective && (!mod.Config.ShowTrackedObjective || !mod.Config.ShowHud))
                 text += "\n\n"+mod.T("field.hidden-tracker");
         }
-        int top=right.Y+90,bottom=right.Bottom-(guide?16:94),lineH=(int)(Game1.smallFont.LineSpacing*fontScale);
+        int top=right.Y+90,bottom=right.Bottom-(guide?16:94),lineH=ReadingLineHeight;
         var lines=Wrap(text,w).ToList();
         int visible=Math.Max(1,(bottom-top)/lineH);
         maxScroll=Math.Max(0,lines.Count-visible);
         scroll=Math.Clamp(scroll,0,maxScroll);
-        for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++) Text(b,lines[i],x,top+(i-scroll)*lineH);
+        for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++) ReadingText(b,lines[i],x,top+(i-scroll)*lineH);
         if(maxScroll>0) Text(b,(scroll>0?"^ ":"")+(scroll<maxScroll?"v":""),right.Right-24,bottom-16,Muted,.65f);
         if(!guide)
         {
@@ -77,7 +83,7 @@ internal sealed partial class JournalMenu
 
     private void HandleObjectiveClick(string id)
     {
-        if(id=="field:guide") { overviewGuide=!overviewGuide;scroll=0;return; }
+        if(id=="field:guide") { learningSelection="";SwitchTab("help");return; }
         var goals=mod.FieldObjectives();
         var current=goals.FirstOrDefault(p=>p.Id==objectiveSelection);
         if(id.StartsWith("field:select:"))
@@ -106,6 +112,7 @@ internal sealed partial class JournalMenu
         }
         keystone=goal.UseKeystone;
         residentArchive=false;
+        expeditionArchive=false;
         scroll=0;
         if(tab=="overview") overviewGuide=true;
     }

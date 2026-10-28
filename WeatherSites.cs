@@ -24,7 +24,8 @@ public sealed partial class ModEntry
         foreach (var site in sites) RepairSite(site, location, reachable);
         return sites.SelectMany(site => site.Points.Where(p => !p.Dug && ValidDigTile(location, new(p.X, p.Y)) && route.Contains(new(p.X, p.Y)))
                 .Select(point => (Site: site, Point: point)))
-            .OrderBy(p => p.Site.Key == signals.Value.SiteKey && new Vector2(p.Point.X,p.Point.Y) == signals.Value.Target ? 0 : 1)
+            .OrderBy(p=>State.TrackedObjective=="dig:"+p.Site.Key?0:1)
+            .ThenBy(p => p.Site.Key == signals.Value.SiteKey && new Vector2(p.Point.X,p.Point.Y) == signals.Value.Target ? 0 : 1)
             .ThenBy(p => p.Point.Revealed ? 0 : 1)
             .ThenBy(p => Vector2.DistanceSquared(Game1.player.Tile, new(p.Point.X, p.Point.Y)))
             .Select(p => ((DigSite Site, DigPoint Point)?)p).FirstOrDefault();
@@ -33,7 +34,7 @@ public sealed partial class ModEntry
     private void RememberWeather()
     {
         var valley = Game1.getFarm();
-        WeatherExpeditions.Observe(State.Weather, Today, valley.IsRainingHere(), valley.IsLightningHere(), Config.EnableWeatherEvents && State.Journey.Started && State.Finds >= 4,
+        WeatherExpeditions.Observe(State.Weather, Today, valley.IsRainingHere(), valley.IsLightningHere(), Config.EnableWeatherEvents && State.Journey.Started && !OpeningStory.Active(State) && State.Finds >= 4,
             State.Sites.Any(s => WeatherExpeditions.Kinds.Contains(s.EventKind) && s.Expires >= Today && s.Points.Any(p => !p.Dug)), Config.WeatherSiteLifetimeDays, Config.WeatherEventCooldownDays);
     }
 

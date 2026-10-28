@@ -23,8 +23,10 @@ internal sealed partial class JournalMenu : IClickableMenu
     private Rectangle left;
     private Rectangle right;
     private float fontScale;
+    private float ReadingScale => mod.Config.JournalTextScale;
+    private int ReadingLineHeight => (int)Math.Ceiling(Game1.smallFont.LineSpacing * ReadingScale) + 5;
     private static readonly Color Ink = new(62, 52, 39);
-    private static readonly Color Muted = new(116, 108, 85);
+    private static readonly Color Muted = new(91, 79, 59);
     private static readonly Color Paper = new(247, 235, 204);
     private string[] Tabs => mod.State.Journey.Started ? new[] { "overview", "catalog", "chapters", "equipment", "settings" } : new[] { "overview", "settings" };
 
@@ -41,7 +43,7 @@ internal sealed partial class JournalMenu : IClickableMenu
         height = Math.Min(760, Game1.uiViewport.Height - 40);
         xPositionOnScreen = (Game1.uiViewport.Width - width) / 2;
         yPositionOnScreen = (Game1.uiViewport.Height - height) / 2;
-        fontScale = width < 1000 || height < 650 ? .82f : .92f;
+        fontScale = 1f;
         int bodyY = yPositionOnScreen + 148;
         int bodyH = height - 212;
         int leftW = (int)((width - 68) * .43f);
@@ -67,7 +69,10 @@ internal sealed partial class JournalMenu : IClickableMenu
         Text(b, text, rect.X + (int)((rect.Width - size.X) / 2), rect.Y + (int)((rect.Height - size.Y) / 2), color, s);
     }
 
-    private IEnumerable<string> Wrap(string text, int pixelWidth)
+    private void ReadingText(SpriteBatch b, string text, int x, int y, Color? color = null)
+        => Text(b, text, x, y, color, ReadingScale);
+
+    private IEnumerable<string> Wrap(string text, int pixelWidth, float? scale = null)
     {
         foreach (string paragraph in text.Split('\n'))
         {
@@ -75,7 +80,7 @@ internal sealed partial class JournalMenu : IClickableMenu
             foreach (string word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             {
                 string candidate = line.Length == 0 ? word : line + " " + word;
-                if (Game1.smallFont.MeasureString(candidate).X * fontScale > pixelWidth && line.Length > 0)
+                if (Game1.smallFont.MeasureString(candidate).X * (scale ?? ReadingScale) > pixelWidth && line.Length > 0)
                 { yield return line; line = word; }
                 else line = candidate;
             }
@@ -85,9 +90,9 @@ internal sealed partial class JournalMenu : IClickableMenu
 
     private int Paragraph(SpriteBatch b, string text, Rectangle area, Color? color = null)
     {
-        int lineHeight = (int)(Game1.smallFont.LineSpacing * fontScale);
+        int lineHeight = (int)(Game1.smallFont.LineSpacing * fontScale) + 4;
         int y = area.Y;
-        foreach (string line in Wrap(text, area.Width))
+        foreach (string line in Wrap(text, area.Width, fontScale))
         {
             if (y + lineHeight > area.Bottom) break;
             Text(b, line, area.X, y, color);
@@ -128,7 +133,7 @@ internal sealed partial class JournalMenu : IClickableMenu
         foreach (string key in Tabs)
             Button(b, "tab:" + key, mod.T("journey.nav."+key), tabBounds["tab:" + key], active: TabSection(tab) == key);
         if (TabSection(tab) != tab) Button(b,"book:back",mod.T("journey.back"),new Rectangle(xPositionOnScreen+width-174,yPositionOnScreen+47,138,28));
-        if (tab == "overview" && !mod.State.Journey.Started) DrawInvitation(b); else if (tab == "overview") DrawOverview(b); else if (tab == "museum") DrawMuseum(b); else if (tab == "frontiers") DrawFrontiers(b); else if (tab == "equipment") DrawEquipment(b); else if (tab == "chapters") DrawChapters(b); else if (tab == "catalog") DrawCatalog(b); else if (tab == "mastery") DrawMastery(b); else if (tab == "settings") DrawSettings(b); else if (tab == "workshop") DrawWorkshop(b); else if (tab == "weather") DrawWeather(b); else if (tab == "gallery") DrawGallery(b); else if (tab == "shipwreck") DrawShipwreck(b); else if (tab == "nature") DrawNature(b); else if (tab == "residents") DrawResidents(b); else DrawCulture(b);
+        if (tab == "help") DrawLearning(b); else if (tab == "routes") DrawRoutes(b); else if (tab == "opening") DrawOpening(b); else if (tab == "overview" && !mod.State.Journey.Started) DrawInvitation(b); else if (tab == "overview") DrawOverview(b); else if(tab=="expeditions")DrawExpeditions(b); else if (tab == "museum") DrawMuseum(b); else if (tab == "frontiers") DrawFrontiers(b); else if (tab == "equipment") DrawEquipment(b); else if (tab == "chapters") DrawChapters(b); else if (tab == "catalog") DrawCatalog(b); else if (tab == "mastery") DrawMastery(b); else if (tab == "settings") DrawSettings(b); else if (tab == "workshop") DrawWorkshop(b); else if (tab == "weather") DrawWeather(b); else if (tab == "gallery") DrawGallery(b); else if (tab == "shipwreck") DrawShipwreck(b); else if (tab == "nature") DrawNature(b); else if (tab == "residents") DrawResidents(b); else DrawCulture(b);
         DrawControllerFocus(b);
         string footer = mod.T(controllerActive ? "journey.controller-footer" : "journey.footer");
         Text(b, footer, xPositionOnScreen + 34, yPositionOnScreen + height - 43, Muted, Math.Min(fontScale * .82f, (width - 68f) / Math.Max(1, Game1.smallFont.MeasureString(footer).X)));
@@ -183,10 +188,13 @@ internal sealed partial class JournalMenu : IClickableMenu
         bool known = restored || artifact.Id == project.Id || pending;
         int x = right.X + 16, w = right.Width - 32;
         b.Draw(mod.Atlas, new Vector2(x + 6, right.Y + 10), Sprite(artifact.Sprite), known ? Color.White : new Color(67, 55, 43), 0, Vector2.Zero, 4, SpriteEffects.None, 1);
-        Paragraph(b, known ? mod.ArtifactName(artifact) : mod.T("journal.unknown"), new Rectangle(x + 84, right.Y + 10, w - 84, 58), ModEntry.RarityColor(artifact.Rarity));
-        Text(b, mod.T("rarity." + artifact.Rarity), x + 84, right.Y + 66, ModEntry.RarityColor(artifact.Rarity), fontScale * .85f);
+        string title = known ? mod.ArtifactName(artifact) : mod.T("journal.unknown");
+        int titleHeight = Wrap(title, w - 84, fontScale).Count() * (Game1.smallFont.LineSpacing + 4);
+        Paragraph(b, title, new Rectangle(x + 84, right.Y + 10, w - 84, titleHeight), ModEntry.RarityColor(artifact.Rarity));
+        int rarityY = right.Y + Math.Max(66, titleHeight + 14);
+        Text(b, mod.T("rarity." + artifact.Rarity), x + 84, rarityY, ModEntry.RarityColor(artifact.Rarity), fontScale * .85f);
         int actionY = right.Bottom - 48;
-        int textTop = right.Y + 108;
+        int textTop = rarityY + 42;
         int textBottom = actionY - (artifact.Id == project.Id ? 94 : 14);
         string content = known ? mod.T("artifact." + artifact.Id + ".description") + "\n\n" + (restored ? mod.T("artifact." + artifact.Id + ".lore") : mod.T("journal.lore-locked"))
             : artifact.Source == "research" ? mod.T("journal.hidden-hint", new { culture = mod.CultureName(artifact.Culture) }) : "";
@@ -196,14 +204,14 @@ internal sealed partial class JournalMenu : IClickableMenu
             content = mod.RelicStatus(artifact) + "\n" + mod.T(Game1.player.Items.Any(p => p?.QualifiedItemId == ModEntry.QualifiedId(artifact)) ? "catalog.carried" : "message.bring-artifact") + "\n\n" + content;
         }
         var lines = Wrap(content, w).ToList();
-        int lineH = (int)(Game1.smallFont.LineSpacing * fontScale);
+        int lineH = ReadingLineHeight;
         int visible = Math.Max(1, (textBottom - textTop) / lineH);
         maxScroll = Math.Max(0, lines.Count - visible);
         scroll = Math.Clamp(scroll, 0, maxScroll);
-        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], x, textTop + (i - scroll) * lineH);
+        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) ReadingText(b, lines[i], x, textTop + (i - scroll) * lineH);
         if (maxScroll > 0)
             Text(b, (scroll > 0 ? "^ " : "") + (scroll < maxScroll ? "v" : ""), right.Right - 24, textBottom - 16, Muted, .65f);
-        if (artifact.Id == project.Id)
+        if (artifact.Id == project.Id && mod.State.Opening.Stage != OpeningStage.Restored)
         {
             int cost = Research.Required(artifact, progress, keystone, mod.State);
             var bar = new Rectangle(x, actionY - 75, w, 12);
@@ -221,7 +229,9 @@ internal sealed partial class JournalMenu : IClickableMenu
             Button(b, "claim:" + artifact.Id, mod.T("weather.claim"), new Rectangle(x, actionY, w, 38));
         else if (restored)
         {
-            if (Game1.currentLocation.Name == "ArchaeologyHouse" && !mod.State.Donated.Contains(artifact.Id))
+            if (OpeningStory.Active(mod.State) && artifact.Id == OpeningStory.Artifact)
+                Button(b, "opening:open", mod.T("opening.read"), new Rectangle(x, actionY, w, 38));
+            else if (Game1.currentLocation.Name == "ArchaeologyHouse" && !mod.State.Donated.Contains(artifact.Id))
                 Button(b, "donate", mod.T("journal.donate"), new Rectangle(x, actionY, w, 38));
             else if (artifact.Effect is not ("" or "lamp"))
                 Button(b, "use", mod.T("journal.use"), new Rectangle(x, actionY, w, 38), mod.RelicDaysUntilReady(artifact) == 0 && Game1.player.Items.Any(p => p?.QualifiedItemId == ModEntry.QualifiedId(artifact)));
@@ -238,8 +248,12 @@ internal sealed partial class JournalMenu : IClickableMenu
         if (id == null || disabledButtons.Contains(id)) return;
         Game1.playSound("smallSelect");
         if (id.StartsWith("tab:")) SwitchTab(id[4..]);
+        else if (id.StartsWith("learn:")) HandleLearningClick(id);
+        else if (id.StartsWith("opening:")) HandleOpeningClick(id);
+        else if (id.StartsWith("route:")) HandleRouteClick(id);
         else if(id.StartsWith("frontier:select:")){selected=id[16..];scroll=0;}
         else if(id=="frontier:open")SwitchTab(selected);
+        else if(id=="frontier:clue"){string route=selected;SwitchTab("routes");selected=route;}
         else if (id == "book:back") SwitchTab(TabSection(tab));
         else if (id == "book:kit") mod.ClaimFieldKit();
         else if (id == "book:upgrade") mod.UpgradeInstrument();
@@ -251,6 +265,7 @@ internal sealed partial class JournalMenu : IClickableMenu
         else if (id.StartsWith("mastery:")) HandleMasteryClick(id);
         else if (id.StartsWith("settings:")) HandleSettingsClick(id);
         else if(id.StartsWith("museum:"))HandleMuseumClick(id);
+        else if(id.StartsWith("exp:"))HandleExpeditionClick(id);
         else if (id.StartsWith("field:") && tab == "overview") HandleObjectiveClick(id);
         else if (id.StartsWith("artifact:")) { selected = id[9..]; scroll = 0; }
         else if (id == "tools" && tab == "overview") mod.ClaimTools();

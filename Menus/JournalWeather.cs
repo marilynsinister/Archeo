@@ -16,11 +16,11 @@ internal sealed partial class JournalMenu
         if (mod.State.Weather.Lead is { } lead)
             guide += "\n\n" + mod.T("weather.lead", new { name = mod.T("weather.name." + lead.Kind), days = lead.Expires - ModEntry.Today + 1 });
         var lines = Wrap(guide, left.Width - 24).ToList();
-        int lineH = (int)(Game1.smallFont.LineSpacing * fontScale);
+        int lineH = ReadingLineHeight;
         int visible = Math.Max(1, (left.Height - 65) / lineH);
         maxScroll = Math.Max(0, lines.Count - visible);
         scroll = Math.Clamp(scroll, 0, maxScroll);
-        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], left.X + 12, left.Y + 48 + (i - scroll) * lineH);
+        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) ReadingText(b, lines[i], left.X + 12, left.Y + 48 + (i - scroll) * lineH);
         if (maxScroll > scroll) Text(b, "v", left.Right - 24, left.Bottom - 24, Muted);
 
         int cardH = (right.Height - 12) / 2;

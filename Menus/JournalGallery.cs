@@ -63,11 +63,11 @@ internal sealed partial class JournalMenu
         // Full collection notes remain readable by scrolling on smaller windows.
         int top = rewardY + 82, bottom = right.Bottom - 54;
         var lines = Wrap(mod.T("gallery.collection-note"), w).ToList();
-        int lineH = (int)(Game1.smallFont.LineSpacing * fontScale);
+        int lineH = ReadingLineHeight;
         int visible = Math.Max(0, (bottom - top) / lineH);
         maxScroll = Math.Max(0, lines.Count - visible);
         scroll = Math.Clamp(scroll, 0, maxScroll);
-        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) Text(b, lines[i], x, top + (i - scroll) * lineH, Muted);
+        for (int i = scroll; i < Math.Min(lines.Count, scroll + visible); i++) ReadingText(b, lines[i], x, top + (i - scroll) * lineH, Muted);
         bool claimed = mod.State.CollectionRewards.Contains(set.Id);
         Button(b, "gallery:reward:" + set.Id, mod.T(claimed ? "gallery.claimed" : "gallery.claim"),
             new Rectangle(x, right.Bottom - 44, w, 38), MuseumCollections.CanClaim(mod.State, set.Id, true));

@@ -20,6 +20,14 @@ public static class FrontierResearch
     public static bool Unlock(ArchaeologyState state)
     {
         if(!state.Journey.Started || !state.Journey.Chapters.Contains("sea"))return false;
+        if(state.Routes.Initialized)
+        {
+            bool opened=false;
+            if(state.Frontiers.DesertAccess && state.Routes.Explained.Contains("calico"))opened|=state.Journey.Chapters.Add("calico");
+            if(state.Frontiers.IslandAccess && state.Routes.Explained.Contains("island"))opened|=state.Journey.Chapters.Add("island");
+            if(state.Journey.Chapters.Contains("calico") || state.Journey.Chapters.Contains("island"))opened|=state.Journey.Chapters.Add("frontiers");
+            return opened;
+        }
         bool changed=state.Journey.Chapters.Add("frontiers");
         if(state.Frontiers.DesertAccess)changed|=state.Journey.Chapters.Add("calico");
         if(state.Frontiers.IslandAccess)changed|=state.Journey.Chapters.Add("island");

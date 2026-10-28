@@ -27,7 +27,11 @@ public static class FieldJournal
     public static List<FieldObjective> Build(ArchaeologyState state, IReadOnlyList<ArtifactDefinition> catalog, int day,
         bool weatherEnabled = true, bool natureEnabled = true)
     {
+        if (OpeningStory.Active(state)) return OpeningStory.Objectives(state, catalog, day);
         var goals = new List<FieldObjective>();
+        if (RouteStories.Pending(state) is { } route)
+            goals.Add(new(){Id="route:"+route.Id,Kind=ObjectiveKind.Talk,Tab="routes",Selection=route.Id,Topic="route:"+route.Id,
+                Npc=route.Npc,Location=route.Npc=="Gunther"?"ArchaeologyHouse":"",Artifact=route.Trigger,DetailKey="routes.goal."+route.Id});
         if(Journey.IsOpen(state,"museum"))
         {
             if(state.Museum.Order is {Completed:false} order && order.Week==LivingMuseum.Week(day))
@@ -37,15 +41,29 @@ public static class FieldJournal
             foreach(var achievement in LivingMuseum.Achievements.Where(a=>LivingMuseum.AchievementReady(state.Museum,a.Id)&&!state.Museum.AchievementClaims.Contains(a.Id)))
                 goals.Add(new(){Id="museum:award:"+achievement.Id,Kind=ObjectiveKind.Reward,Tab="museum",Selection="achievements",Topic="museum_award",Artifact=achievement.Reward,DetailKey="museum.goal-detail.award"});
         }
-        var active = state.Sites.Where(p => p.Expires >= day && p.Points.Any(n => !n.Dug)).ToList();
+        var active = state.Sites.Where(p => p.Expires >= day && p.Points.Any(n => !n.Dug)
+            && (p.EventKind != "" || RouteStories.AllowsField(state,p.Culture))).ToList();
+        foreach(var story in PuzzleExpeditions.All)
+        {
+            var stage=PuzzleExpeditions.Stage(state.Expeditions,story.Id);
+            if(stage is ExpeditionStage.Locked or ExpeditionStage.Complete)continue;
+            int leg=PuzzleExpeditions.Leg(stage);
+            if(leg>0&&active.Any(s=>s.EventKind==story.Kind(leg)))continue;
+            bool talk=stage is ExpeditionStage.Invitation or ExpeditionStage.Consult or ExpeditionStage.Finale;
+            goals.Add(new(){Id="expedition:"+story.Id+":"+(int)stage,Kind=stage==ExpeditionStage.Reward?ObjectiveKind.Reward:talk?ObjectiveKind.Talk:ObjectiveKind.Wait,
+                Tab="expeditions",Selection=story.Id,Topic="expedition:"+story.Id,Culture=story.Culture,
+                Npc=talk?(stage==ExpeditionStage.Consult?story.Secondary:story.Primary):"",Location=leg==1?story.First:leg==2||stage==ExpeditionStage.Meeting?story.Second:"",
+                Artifact=stage==ExpeditionStage.Reward?story.Reward:"",DetailKey="exp.goal-detail"});
+        }
         foreach (var site in active)
         {
             var resident = ResidentStories.All.FirstOrDefault(p => p.SiteKind == site.EventKind);
-            string tab = resident != null ? "residents" : Shipwreck.Kinds.Contains(site.EventKind) ? "shipwreck"
+            var expedition=PuzzleExpeditions.All.FirstOrDefault(s=>site.EventKind==s.Kind(1)||site.EventKind==s.Kind(2));
+            string tab = expedition!=null?"expeditions":resident != null ? "residents" : Shipwreck.Kinds.Contains(site.EventKind) ? "shipwreck"
                 : NaturalEvents.Kinds.Contains(site.EventKind) ? "nature" : WeatherExpeditions.Kinds.Contains(site.EventKind) ? "weather"
                 : site.EventKind == "stars" ? "overview" : site.Culture;
             goals.Add(new FieldObjective { Id = "dig:"+site.Key, Kind = ObjectiveKind.Dig, Tab = tab,
-                Selection = resident?.Id ?? (tab == "nature" ? site.EventKind : ""), Topic = site.EventKind,
+                Selection = expedition?.Id??resident?.Id ?? (tab == "nature" ? site.EventKind : ""), Topic = site.EventKind,
                 Culture = site.Culture, Location = site.Location, Remaining = site.Points.Count(p => !p.Dug), Expires = site.Expires,
                 DetailKey = site.Expires == int.MaxValue ? "field.detail.permanent-dig" : "field.detail.dig" });
         }
@@ -66,6 +84,7 @@ public static class FieldJournal
 
         foreach (string culture in Research.Cultures)
         {
+            if (!RouteStories.AllowsField(state,culture)) continue;
             if (!state.Cultures.TryGetValue(culture,out var progress)) continue;
             var project = catalog.FirstOrDefault(p => p.Id == progress.Project && p.Culture == culture && p.Source == "research");
             if (project == null) continue;
@@ -156,6 +175,16 @@ public static class FieldJournal
     {
         if (state.TrackedObjective.Length == 0 || Tracked(state,goals) != null) return;
         string old = state.TrackedObjective;
+        if (old.StartsWith("route:",StringComparison.Ordinal) && state.Routes.Explained.Contains(old[6..]))
+        {
+            state.TrackedObjective = goals.FirstOrDefault(p => p.Kind == ObjectiveKind.Dig && p.Culture == old[6..] && p.Topic == "")?.Id ?? "";
+            return;
+        }
+        if (OpeningStory.Active(state))
+        {
+            state.TrackedObjective = goals.FirstOrDefault(p => p.Topic == "opening")?.Id ?? "";
+            return;
+        }
         // A placed cache is the same objective as its lead, even though its available actions changed.
         string? replacement = old.StartsWith("lead:",StringComparison.Ordinal) ? "dig:"+old[5..] : null;
         var resident = ResidentStories.All.FirstOrDefault(p => old == "resident:"+p.Id+":wait");

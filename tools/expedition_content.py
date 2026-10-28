@@ -1,0 +1,111 @@
+"""Original two-part expeditions and their gradual, in-book assistance."""
+RU={
+"journey.chapter.expeditions":"Экспедиции с загадками","exp.section":"Полевые экспедиции",
+"exp.title.river":"По отметкам воды","exp.title.tide":"Нить обратной дороги",
+"exp.discovered":"Новая зацепка: «{{name}}».","exp.site-ready":"Место поисков определено: {{location}}. Тайник без срока.","exp.parts-found":"Части и полевая запись сохранены в книге. Прочитай следующую зацепку.",
+"exp.reconsider":"Наблюдения пока не сходятся. Перечитай запись или открой подсказку — части и награды сохранены.","exp.reward-received":"Памятный предмет экспедиции получен!",
+"exp.archive":"Читать собранные записи","exp.back":"К текущей задаче","exp.hint":"Открыть подсказку","exp.answer":"Показать прямую подсказку","exp.hints-open":"Подсказки раскрыты",
+"exp.no-space":"В «{{location}}» пока не удалось разместить две доступные точки. Освободи землю или вернись позже: части не пропадут, срок не идёт.",
+"exp.active":"{{location}} · осталось находок: {{count}}. Используй искатель из руки и мотыгой выкопай золотые метки. Тайник не имеет срока.",
+"exp.action.talk":"Обсудить зацепку рядом с жителем","exp.action.meeting":"Начать совместный осмотр","exp.action.claim":"Забрать памятный предмет",
+"exp.assembly":"Реставрация из четырёх частей","exp.cycle":"Нажимай ячейки, чтобы менять детали местами.","exp.confirm":"Проверить сборку",
+"exp.slot.0":"Сверху слева","exp.slot.1":"Сверху справа","exp.slot.2":"Снизу слева","exp.slot.3":"Снизу справа",
+"exp.meeting-title":"Совместный полевой осмотр","exp.continue":"Продолжить осмотр",
+"exp.goal-detail":"Открой запись экспедиции. В ней сохранены зацепки, текущая задача и подсказки двух уровней. Части, сборка и награда не имеют срока.",
+"exp.reward.river":"Модель речного дозора","exp.reward.tide":"Мобиль обратной дороги",
+"exp.npc.Penny":"Пенни","exp.npc.Maru":"Мару","exp.npc.Willy":"Вилли","exp.npc.Leo":"Лео",
+"location.Forest":"Лес","location.Town":"Город Пеликан","location.Backwoods":"Задворки фермы","location.BusStop":"Автобусная остановка","location.Mountain":"Горы","location.Beach":"Пляж долины",
+"location.IslandSouth":"Южный берег острова","location.IslandEast":"Восточные джунгли","location.IslandNorth":"Север острова",
+}
+EN={
+"journey.chapter.expeditions":"Riddle expeditions","exp.section":"Field expeditions",
+"exp.title.river":"By the Water Marks","exp.title.tide":"The Thread Home",
+"exp.discovered":"A new lead: {{name}}.","exp.site-ready":"Search location established: {{location}}. This cache has no deadline.","exp.parts-found":"Parts and field notes saved in the book. Read the next lead.",
+"exp.reconsider":"The observations do not quite fit. Reread the notes or open a hint; your parts and rewards are safe.","exp.reward-received":"Expedition keepsake received!",
+"exp.archive":"Read collected notes","exp.back":"Return to the task","exp.hint":"Reveal a hint","exp.answer":"Show a direct hint","exp.hints-open":"Hints revealed",
+"exp.no-space":"Two accessible points could not yet be placed in {{location}}. Clear some ground or return later. Parts remain safe and there is no deadline.",
+"exp.active":"{{location}} · finds remaining: {{count}}. Hold the seeker, then hoe the golden marks. This cache has no deadline.",
+"exp.action.talk":"Discuss the lead beside the resident","exp.action.meeting":"Begin joint field inspection","exp.action.claim":"Collect expedition keepsake",
+"exp.assembly":"Restore the four-part object","exp.cycle":"Click slots to cycle and swap their parts.","exp.confirm":"Check the assembly",
+"exp.slot.0":"Upper left","exp.slot.1":"Upper right","exp.slot.2":"Lower left","exp.slot.3":"Lower right",
+"exp.meeting-title":"Joint field inspection","exp.continue":"Continue the inspection",
+"exp.goal-detail":"Open the expedition notes for your current task, collected evidence and two levels of hints. Parts, assembly and rewards have no deadline.",
+"exp.reward.river":"River Watch Model","exp.reward.tide":"Homeward Journey Mobile",
+"exp.npc.Penny":"Penny","exp.npc.Maru":"Maru","exp.npc.Willy":"Willy","exp.npc.Leo":"Leo",
+"location.Forest":"Cindersap Forest","location.Town":"Pelican Town","location.Backwoods":"Farm Backwoods","location.BusStop":"Bus Stop","location.Mountain":"Mountain","location.Beach":"Valley Beach",
+"location.IslandSouth":"Island South","location.IslandEast":"Island East","location.IslandNorth":"Island North",
+}
+STAGES=[
+("Ещё не открыто","Not yet discovered","История пока не открыта.","This story has not been discovered."),
+("Приглашение","An invitation","Поговори с {{name}} рядом с ним. Старое исследование оставило новую, более личную зацепку.","Talk to {{name}} nearby. Your earlier research left a new and more personal lead."),
+("Первая зацепка","First lead","Сопоставь полевую запись с местностью и выбери, где искать. За неверный ответ ничего не расходуется.","Compare the field note with the landscape and choose a search location. Wrong answers cost nothing."),
+("Первый тайник","First cache","Найди две части первого тайника. Они сохраняются как записи и не занимают рюкзак.","Excavate the first cache's two parts. They are kept in your notes and need no backpack slots."),
+("Совет напарника","A partner's advice","Покажи записи {{name}}, стоя рядом. Его наблюдение поможет прочитать следы на частях.","Show the notes to {{name}} nearby. Your partner's observation will help explain the marks on the parts."),
+("След свойств предмета","Following the object's clues","Теперь сопоставь свойства частей с новой записью и выбери второе место.","Compare the parts' properties with the new note and choose the second location."),
+("Второй тайник","Second cache","Во втором тайнике ещё две части. Находки остаются доступны без срока.","Two more parts await in the second cache. There is no deadline to excavate them."),
+("Совместный осмотр","Joint inspection","Отправляйся в {{location}}. Начни совместный осмотр с участниками экспедиции: вы обсудите находки в отдельной полевой сцене. Закрыть её и вернуться можно без потери прогресса.","Travel to {{location}} and begin a joint inspection. Your expedition partners discuss the finds in a separate field scene. You may close it and return without losing progress."),
+("Реставрация","Restoration","Собери прибор из четырёх частей. Каждая существует в одном экземпляре; перестановки сохраняются.","Assemble the four parts. Each exists once, and your arrangement is saved."),
+("Назначение предмета","The object's purpose","Сборка готова. Какое назначение объясняет все найденные следы? Выбери версию, опираясь на записи и осмотр.","The assembly is complete. Which purpose explains all the evidence? Choose a theory using your notes and inspection."),
+("Вернуть историю","Return the story","Вернись к {{name}} и расскажи вывод. Финальный разговор сохранит историю и даст опыт, музейные марки и дружбу с обоими участниками один раз.","Return to {{name}} with your conclusion. The final conversation archives the story and awards XP, museum marks and friendship with both partners once."),
+("Награда ждёт","Keepsake ready","История восстановлена. Уже получены 250 опыта и 150 дружбы с каждым участником с учётом мастерства, а также 5 музейных марок. Освободи одну ячейку для памятного предмета; он ждёт без срока.","The story is restored. You have received 250 XP and 150 friendship with each partner, adjusted by mastery, plus 5 museum marks. Make one backpack slot for the keepsake; it waits indefinitely."),
+("История завершена","Story completed","Памятный предмет получен. Записи, наблюдения и финальный рассказ остаются в архиве книги.","Keepsake collected. Your evidence, observations and final story remain in the book's archive."),
+]
+for i,(rs,es,ru,en) in enumerate(STAGES):
+    RU[f"exp.status.{i}"]=rs;EN[f"exp.status.{i}"]=es;RU[f"exp.stage.{i}"]=ru;EN[f"exp.stage.{i}"]=en
+
+STORIES={
+"river":{
+"intro":("После истории с азбукой Пенни вернулась к школьным полевым записям. Между страниц нашлась полоска с отметками воды. Резонансная линза проявила на ней следы поплавка, но подпись оказалась стёрта. Пенни не хочет потерять ещё одну историю тех, кто заботился о долине до нас.","After the primer story, Penny returned to the school's field notes. Between the pages lay a strip marked with water levels. The resonant lens revealed float marks, but its label had faded. Penny does not want another story of the valley's caretakers to disappear."),
+"dialogue.1":("Пенни: Я собиралась сделать урок о старых мостах, а нашла чей-то список дежурств. Возле каждого имени — черта, иногда две. И приписка: «Там, где большая река огибает лесную тропу». Мне кажется, люди по очереди следили за водой. Поможешь найти, чем они пользовались? Линза уже показала, что отметки не нарисованы поверх древесины: их тёр движущийся поплавок.","Penny: I meant to prepare a lesson about old bridges, but found somebody's watch roster. Beside each name is a line, sometimes two, and a note: 'Where the great river bends around the woodland path.' I think people took turns watching the water. Will you help find what they used? Your lens showed that the marks were worn into the wood by a moving float."),
+"dialogue.4":("Мару: На этой оси нет кругового износа. Значит, она не крутила мельницу: рычаг качался вверх и вниз. А шкала сужается к верхнему краю — там важна каждая отметка. Вторая половина записи говорит: «Проверили у истока, под горными склонами». Я бы искала там, где вода ещё холодная и быстрая. Соберём остальные части, а потом устроим настоящий полевой осмотр.","Maru: This axle has no circular wear. It did not turn a mill; its lever rocked up and down. The scale narrows near the top, where every mark matters. The other half of the note says: 'Checked at the source below the mountain slopes.' I'd look where the water is still cold and fast. Let's find the remaining parts, then hold a proper field inspection."),
+"dialogue.10":("Пенни: Значит, это не часы и не мельница, а речной дозор. Один человек замечал подъём воды, другой успевал предупредить тех, кто шёл через мост. В списке нет ни одного важного имени — только соседи. Мару сделает для нас безопасную модель, а я напишу рядом: «Долина держалась на людях, которые не проходили мимо». Спасибо, что помогла вернуть их заботе имя.","Penny: So it was neither a clock nor a mill, but a river watch. One person noticed the rising water; another warned the people crossing the bridge. The roster has no grand names, only neighbours. Maru will make us a safe model, and I'll label it: 'The valley depended on people who stopped to care.' Thank you for giving their care a name again."),
+"clue.1":("«Большая река огибает лесную тропу. Дежурный смотрит на воду, а не на часы». Возле записи нарисована широкая излучина; с тихой тропы за домом такого моста не видно.","'The great river bends around the woodland path. The watcher looks at water, not a clock.' A wide bend is drawn beside the note; no such bridge can be seen from the quiet path behind the farm."),
+"clue.2":("Ось качалась, а не вращалась. «Проверили у истока, под горными склонами». Нужна местность выше по течению, где река приходит с гор.","The axle rocked rather than spun. 'Checked at the source below the mountain slopes.' Look upstream, where the river comes from the mountains."),
+"evidence.1":("Найдены шкала с неодинаковыми делениями и узкая ось. На оси две полосы износа, а не полный круг. За линзой видны отложения речной воды.","Recovered: an unevenly divided scale and a narrow axle. The axle has two wear lines, rather than a full circle. Through the lens you can see river deposits."),
+"evidence.2":("Теперь есть четыре части: шкала, ось, лёгкий поплавок и несущая рамка. Поплавок меняет высоту, ось передаёт движение, шкала позволяет заметить опасный подъём воды.","All four parts: scale, axle, light float and supporting frame. The float changes height, the axle transfers movement and the scale makes a dangerous rise in water visible."),
+"meeting.0":("Пенни: Я сверила имена. Дежурства переходили от дома к дому; никто не стоял у реки всю ночь один. Этот прибор был частью общего обещания беречь соседей.","Penny: I checked the names. The watch passed from house to house; nobody stood by the river alone all night. This instrument was part of a shared promise to care for neighbours."),
+"meeting.1":("Мару: Положим шкалу справа от поплавка, рамку под поплавком, ось под шкалой. Такая геометрия оставляет рычагу место для движения. На всех деталях сходятся следы воды.","Maru: Put the scale to the float's right, the frame below the float and the axle below the scale. That gives the lever room to move. The water marks line up across the parts."),
+"meeting.2":("Пенни: В записи самая высокая черта отмечена словом «звать». Не «собирать урожай», не «начинать смену», а просто «звать». Они успевали позвать тех, кто ещё был у моста.","Penny: The highest line in the note is marked 'call'. Not 'harvest' or 'begin the shift', just 'call'. They had time to warn the people still at the bridge."),
+"meeting.3":("Какое наблюдение объясняет и ось, и поплавок, и школьную запись?", "Which observation explains the axle, the float and the school note together?"),
+"assembly-guide":("Поплавок слева от шкалы. Рамка под поплавком, ось под шкалой. Сборку можно менять без штрафа.","Float left of scale. Frame below float; axle below scale. Change the assembly freely."),
+},
+"tide":{
+"intro":("После истории гавани Вилли заметил на старой пряжке узор из четырёх петель. Такой же Лео когда-то видел в островном плетении. Вилли предлагает проследить дорогу вещи между двумя берегами: возможно, это память о возвращении, а не карта сокровищ.","After the harbour story, Willy noticed four loops on the old buckle. Leo had seen the same pattern in island weaving. Willy suggests tracing the object between two shores. It may remember a return journey, rather than buried treasure."),
+"dialogue.1":("Вилли: Гавань любит большие истории о дальних плаваниях. А я всё думаю о тех, кто возвращался в маленькой лодке без компаса. На пряжке четыре петли, словно остановки на шнуре. В старой записи сказано: «Начни там, где лодки долины оставляют на песке; держись берега до моста к приливным лужам». Пойдём от знакомого берега. Мост нам пока не понадобится.","Willy: Harbours love grand tales of distant voyages. I keep thinking about people who returned in little boats without a compass. The buckle has four loops, like stops along a cord. An old note says: 'Begin where the valley boats rest on sand; stay on this side of the tide-pool bridge.' Let's start at the familiar shore. We won't need the bridge."),
+"dialogue.4":("Лео: Я знаю такие узлы. Их можно читать пальцами, даже когда смотришь на волны. Ракушка — море, камень — дерево и земля. Но последний узел ведёт не к дому в дереве: он говорит «отсюда лодка вернёт тебя домой». Ищи на том берегу острова, где впервые высаживаются гости и ждёт обратная лодка. Потом посмотрим вместе: у каждого из нас своя половина дороги.","Leo: I know those knots. You can read them with your fingers while watching the waves. A shell means sea; a stone means trees and land. But the last knot does not lead to a tree home. It says: 'From here, the boat will take you home.' Search the island shore where visitors first arrive and the return boat waits. Then we'll look together: each of us knows half the journey."),
+"dialogue.10":("Вилли: Памятка обратной дороги... Не приказ, куда идти, а способ не забыть, что ждёт дома. Лео говорит, здесь завязывали новый узел после каждого благополучного возвращения. Я думал, что знаю все полезные морские инструменты. Оказывается, самый важный иногда нужен не лодке, а человеку. Сделаем лёгкий мобиль: ракушка, камень и нить снова будут рядом, а старая находка останется нашей общей историей.","Willy: A reminder of the way home... Not an order about where to go, but a way to remember what waits there. Leo says another knot was tied after every safe return. I thought I knew every useful sailing instrument. Sometimes the most important one serves the person, rather than the boat. Let's make a light mobile, bringing shell, stone and thread together again. The old find will remain our shared story."),
+"clue.1":("«Лодки долины оставляют на песке; держись берега до моста к приливным лужам». Песок въелся в первую петлю шнура. За мостом отметок нет.","'The valley boats rest on sand; stay on this side of the tide-pool bridge.' Sand is caught in the cord's first loop. No marks lie beyond the bridge."),
+"clue.2":("Узлы читаются на ощупь, ракушка значит море. Последняя петля — не начало лесной тропы, а место возвращения: «Здесь остров встречает гостей, здесь лодка ждёт их домой». На бусине осталась соль.","Knots can be read by touch, and the shell means sea. The last loop marks a return rather than the start of a forest trail: 'Here the island welcomes visitors; here the boat waits to take them home.' Salt remains on the bead."),
+"evidence.1":("Найдены деревянная рамка и просверленная ракушка. Нет магнитной стрелки, шкалы градусов или зубцов. На отверстии видны мягкие следы шнура.","Recovered: a wooden frame and a drilled shell. There is no magnetic needle, degree scale or gearing. Soft cord marks remain inside the hole."),
+"evidence.2":("Четыре части: рамка, ракушка, узловой шнур и каменная бусина. Узлы идут в устойчивом порядке. Вещь различает берег, лес и возвращение; она не измеряет скорость лодки.","Four parts: frame, shell, knotted cord and stone bead. The knots follow a stable sequence. The object distinguishes shore, forest and return; it does not measure a boat's speed."),
+"meeting.0":("Вилли: У этой вещи нет севера. Я поворачивал рамку — узлы не меняли значения. Значит, мы зря искали здесь обычный компас.","Willy: This object has no north. I turned the frame, and the knots kept their meaning. We were wrong to look for an ordinary compass."),
+"meeting.1":("Лео: Ракушка слева вверху, камень справа. Рамка под ракушкой, шнур под камнем. Сначала вспоминаешь море, потом землю, потом дом. Узел хранит порядок, а не расстояние.","Leo: Shell at the upper left, stone at the right. Frame below the shell, cord below the stone. First remember the sea, then land, then home. A knot keeps the sequence, rather than the distance."),
+"meeting.2":("Вилли: Мы с Лео знаем разные берега, но можем прочитать одну дорогу. Пожалуй, для этого и нужна такая простая вещь: чтобы память одного человека помогла другому вернуться.","Willy: Leo and I know different shores, yet we can read one journey. Perhaps that is what this simple object was for: letting one person's memory help another return."),
+"meeting.3":("Какой вывод согласуется со всеми частями и обоими рассказами?","Which conclusion fits every part and both accounts?"),
+"assembly-guide":("Ракушка слева вверху, камень справа. Рамка под ракушкой, шнур под камнем.","Shell upper left, bead upper right. Frame below shell; cord below bead."),
+}}
+for story,fields in STORIES.items():
+    for key,(ru,en) in fields.items():RU[f"exp.{key}.{story}" if key in ("intro","assembly-guide") else f"exp.{key.split('.')[0]}.{story}."+key.split('.',1)[1]]=ru;EN[f"exp.{key}.{story}" if key in ("intro","assembly-guide") else f"exp.{key.split('.')[0]}.{story}."+key.split('.',1)[1]]=en
+
+PARTS={"river":[("Шкала","Scale"),("Ось","Axle"),("Поплавок","Float"),("Рамка","Frame")],"tide":[("Рамка","Frame"),("Ракушка","Shell"),("Шнур","Cord"),("Бусина","Bead")]}
+PURPOSES={"river":[("Часы дежурного","Watch keeper's clock"),("Указатель уровня воды","Water-level indicator"),("Мельничный привод","Mill drive")],"tide":[("Компас дальнего плавания","Long-distance compass"),("Счётчик скорости лодки","Boat speed counter"),("Памятка обратного пути","Reminder of the way home")]}
+OBSERVATIONS={"river":[("Ось вращалась полный круг","The axle turned a full circle"),("Шкала отсчитывала часы","The scale counted hours"),("Поплавок следовал уровню воды","The float followed the water level")],"tide":[("Рамка всегда показывает север","The frame always points north"),("Узлы хранят порядок остановок","Knots preserve the order of stops"),("Ракушка измеряет скорость","The shell measures speed")]}
+for kind,groups in (("piece",PARTS),("purpose",PURPOSES),("observation",OBSERVATIONS)):
+    for story,options in groups.items():
+        for i,(ru,en) in enumerate(options):RU[f"exp.{kind}.{story}.{i}"]=ru;EN[f"exp.{kind}.{story}.{i}"]=en
+HINTS={
+"river":{
+2:[("Важны большая река и лесная тропа.","The important clues are the large river and woodland path."),("Выбери лес — Cindersap Forest.","Choose Cindersap Forest.")],
+5:[("Исток лежит выше леса по течению.","The source lies upstream from the forest."),("Выбери горы.","Choose the Mountain.")],
+7:[("Вспомни вертикальные следы воды на поплавке.","Recall the vertical water marks on the float."),("Верно: поплавок следовал уровню воды.","Correct: the float followed the water level.")],
+8:[("Поплавок и шкала сверху, крепления снизу.","Float and scale above; supports below."),("Сверху: поплавок / шкала. Снизу: рамка / ось.","Top: float / scale. Bottom: frame / axle.")],
+9:[("Прибор не крутится и не знает времени.","It neither spins nor tells time."),("Назначение — указатель уровня воды.","Its purpose is a water-level indicator.")]},
+"tide":{
+2:[("Лодки и песок, мост не нужен.","Boats and sand, with no bridge required."),("Выбери пляж долины.","Choose the valley Beach.")],
+5:[("Нужен островной берег с лодкой Вилли.","Look for the island shore with Willy's boat."),("Выбери южный берег острова — Island South.","Choose Island South.")],
+7:[("Важно, что можно прочитать пальцами.","Consider what can be read by touch."),("Верно: узлы хранят порядок остановок.","Correct: knots preserve the order of stops.")],
+8:[("Море и земля сверху, основа и связь снизу.","Sea and land above; support and connection below."),("Сверху: ракушка / бусина. Снизу: рамка / шнур.","Top: shell / bead. Bottom: frame / cord.")],
+9:[("Ни градусов, ни магнитной стрелки — только память.","No degrees or magnetic needle, just memory."),("Назначение — памятка обратного пути.","Its purpose is a reminder of the way home.")]}}
+for story,stages in HINTS.items():
+    for stage,pairs in stages.items():
+        for level,(ru,en) in enumerate(pairs,1):RU[f"exp.hint.{story}.{stage}.{level}"]=ru;EN[f"exp.hint.{story}.{stage}.{level}"]=en

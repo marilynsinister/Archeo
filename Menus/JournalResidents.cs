@@ -54,12 +54,12 @@ internal sealed partial class JournalMenu
             if (stage >= ResidentStage.Reward) text += "\n\n"+mod.T("artifact."+story.Artifact+".description");
         }
         string? action = archive ? null : stage switch { ResidentStage.Clue=>"start",ResidentStage.Recovered=>"share",ResidentStage.Reward=>"claim",_=>null };
-        int top=right.Y+96,bottom=right.Bottom-(action==null?14:58),lineH=(int)(Game1.smallFont.LineSpacing*fontScale);
+        int top=right.Y+96,bottom=right.Bottom-(action==null?14:58),lineH=ReadingLineHeight;
         var lines=Wrap(text,w).ToList();
         int visible=Math.Max(1,(bottom-top)/lineH);
         maxScroll=Math.Max(0,lines.Count-visible);
         scroll=Math.Clamp(scroll,0,maxScroll);
-        for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++) Text(b,lines[i],x,top+(i-scroll)*lineH);
+        for(int i=scroll;i<Math.Min(lines.Count,scroll+visible);i++) ReadingText(b, lines[i],x,top+(i-scroll)*lineH);
         if(maxScroll>0) Text(b,(scroll>0?"^ ":"")+(scroll<maxScroll?"v":""),right.Right-24,bottom-16,Muted,.65f);
         if(action!=null) Button(b,"resident:action:"+selected+":"+action,mod.T("residents.action."+action),new Rectangle(x,right.Bottom-44,w,38),mod.CanResidentAction(selected,action));
     }

@@ -17,6 +17,7 @@ public sealed partial class SmokeEntry : Mod
 {
     private bool started;
     private int ticks;
+    private int captures;
     private readonly List<string> results = new();
     private string Out => Path.GetFullPath(Path.Combine(Helper.DirectoryPath,"..",".."));
     private const BindingFlags Instance = BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance;
@@ -44,12 +45,17 @@ public sealed partial class SmokeEntry : Mod
             Capture(new JournalMenu(mod),"journey-invitation-ru.png");
             Check(!mod.ClaimFieldKit() && !mod.State.Journey.Started,"kit requires Gunther's museum");
             Move("ArchaeologyHouse");
+            mod.Config.FragmentMultiplier=.25f;mod.Config.FindsPerSite=2;
             var original=Game1.player.Items.ToArray();
             for(int i=0;i<Game1.player.Items.Count;i++)if(Game1.player.Items[i]==null)Game1.player.Items[i]=ItemRegistry.Create("(O)390",999);
             Check(!mod.ClaimFieldKit() && !mod.State.Journey.Started,"full backpack preserves the unclaimed kit");
             for(int i=0;i<original.Length;i++)Game1.player.Items[i]=original[i];
             Check(mod.ClaimFieldKit(),"Gunther provides the real kit");Game1.activeClickableMenu=null;
             Check(mod.State.Sites.Count==1 && mod.State.Sites[0].Culture=="valley","kit opens only the valley field");
+            Check(mod.State.Opening.Stage==OpeningStage.Searching && mod.State.Sites[0].Key==OpeningStory.SiteKey && mod.State.Sites[0].Expires==int.MaxValue,"first story starts with one persistent introductory site");
+            Check(mod.FieldObjectives().Count==1 && mod.State.TrackedObjective=="dig:"+OpeningStory.SiteKey,"the kit pins exactly one first step");
+            Check(FieldLearning.Current(mod.State,mod.Research.Artifacts)=="search","new kit starts with the instrument lesson");
+            CaptureLearning(mod,"kit");
             var early=new JournalMenu(mod,"catalog");Capture(early,"journey-first-project.png");
             Check(ButtonsOf(early).Keys.Count(p=>p.StartsWith("artifact:"))==1,"early catalog shows one project and no future silhouettes");
             Check(Field<string>(new JournalMenu(mod,"shipwreck"),"tab")=="overview","direct page request cannot expose a future story");
@@ -62,6 +68,8 @@ public sealed partial class SmokeEntry : Mod
             Equip("surveyor");mod.Survey();
             point=dig.Points.Single(p=>p.X==signals.Value.Target.X&&p.Y==signals.Value.Target.Y);
             Check(point.Revealed && signals.Value.Revealed,"nearby instrument scan permanently marks the real tile");
+            Check(FieldLearning.Current(mod.State,mod.Research.Artifacts)=="dig","real survey advances the lesson to using the hoe");
+            CaptureLearning(mod,"marked");
             signals.Value.Until=0;
             var hoe=Game1.player.Items.OfType<Hoe>().FirstOrDefault()??new Hoe();
             if(!Game1.player.Items.Contains(hoe))Game1.player.addItemToInventoryBool(hoe);
@@ -69,6 +77,9 @@ public sealed partial class SmokeEntry : Mod
             Game1.player.toolPower.Value=0;int before=mod.State.Finds;
             hoe.DoFunction(Game1.currentLocation,point.X*64+32,point.Y*64+32,1,Game1.player);
             Check(point.Dug&&mod.State.Finds==before+1,"actual hoe excavates a marked tile after the arrow expires");
+            Check(mod.State.Cultures["valley"].Fragments>=5 && dig.Points.Count==4 && mod.State.Cultures["valley"].Keystones==0,"introductory excavation remains sufficient and simple at minimum fragment and site settings");
+            Check(FieldLearning.Available(mod.State,mod.Research.Artifacts).Contains("fragments"),"real excavation opens the fragment explanation");
+            CaptureLearning(mod,"fragments");
             mod.OnHoeDig(Game1.currentLocation,point.X,point.Y,Game1.player);
             Check(mod.State.Finds==before+1,"a find cannot award twice");
             var decoy=new DigSite{Culture="valley",Location=dig.Location,Expires=ModEntry.Today+3,EventKind="rain",EventId="qa:rain",Points=new(){new(){X=4,Y=4}}};
@@ -97,12 +108,21 @@ public sealed partial class SmokeEntry : Mod
             var routes=(FieldRoute)Call(mod,"RoutesFromPlayer",location)!;
             Check(mod.State.Sites.Where(s=>s.Location==location.Name).SelectMany(s=>s.Points).Where(p=>!p.Dug).All(p=>routes.Contains(new(p.X,p.Y))),"offered local points belong to the player's reachable land component");
             mod.State.Sites.Remove(invalid);mod.State.Sites.Remove(charged);
-            var progress=mod.Research.Progress(mod.State,"valley");progress.Fragments=200;
+            CompleteOpeningDig(mod);
+            var progress=mod.Research.Progress(mod.State,"valley");
             mod.Restore("valley",false);
-            Check(Journey.IsOpen(mod.State,"dwarf")&&!Journey.IsOpen(mod.State,"sea"),"first restoration opens one new field");
+            Check(!Journey.IsOpen(mod.State,"dwarf") && mod.State.Opening.Stage==OpeningStage.Restored && mod.State.TrackedObjective=="opening:talk","first restoration leads to Gunther before unlocking another field");
+            CheckOpeningStory(mod);
+            if(File.Exists(Path.Combine(Helper.DirectoryPath,"opening-only.flag")))
+            {
+                File.WriteAllLines(Path.Combine(Out,"smoke-results.txt"),results);Game1.game1.Exit();return;
+            }
+            Check(Journey.IsOpen(mod.State,"dwarf")&&!Journey.IsOpen(mod.State,"sea"),"the concluding conversation opens one explained field");
+            mod.Research.Progress(mod.State,"valley").Fragments=200;
             mod.Restore("valley",false);
-            Check(Journey.IsOpen(mod.State,"sea"),"second restoration opens shore research");
-            dig.Points.First(p=>!p.Dug).Revealed=true;mod.SaveState();
+            Check(!Journey.IsOpen(mod.State,"sea"),"restoration count alone no longer opens the coast");
+            CheckShoreRoute(mod);
+            mod.State.Sites.First(s=>s.Points.Any(p=>!p.Dug)).Points.First(p=>!p.Dug).Revealed=true;mod.SaveState();
             string saved=Game1.player.modData[ModEntry.Id+"/Progress"];Call(mod,"LoadState");
             Check(JsonSerializer.Serialize(mod.State)==saved&&mod.State.Sites.SelectMany(s=>s.Points).Any(p=>p.Revealed&&!p.Dug),"reload preserves progress and undug permanent markers");
             mod.State.Experience=1280;Game1.player.MaxItems=36;
@@ -112,7 +132,7 @@ public sealed partial class SmokeEntry : Mod
             Check(mod.State.Journey.InstrumentLevel==2&&Game1.player.Money==1750&&mod.MaterialCount("334")==0,"first instrument improvement consumes its shown costs");
             mod.UpgradeInstrument();
             Check(mod.State.Journey.InstrumentLevel==3&&Game1.player.Money==750&&!mod.CanUpgradeInstrument,"second improvement reaches the cap");
-            Move("Forest");CheckFrontiers(mod);CheckMuseum(mod);RenderPages(mod);
+            Move("Forest");CheckFrontiers(mod);CheckMuseum(mod);CheckExpeditions(mod);RenderPages(mod);CheckLearningLayouts(mod);
             Check(true,"Russian and English book pages rendered at 1280x720 and 900x640");
         }
         catch(Exception ex){results.Add(ex.ToString());Monitor.Log(ex.ToString(),LogLevel.Error);}
@@ -121,9 +141,11 @@ public sealed partial class SmokeEntry : Mod
     private void CheckFrontiers(ModEntry mod)
     {
         Check(mod.Research.Artifacts.Count==43 && mod.Atlas.Height==96,"1.2 registers all 43 finds and the expanded native atlas");
-        Check(Journey.IsOpen(mod.State,"frontiers") && !Journey.IsOpen(mod.State,"calico") && !Journey.IsOpen(mod.State,"island")
+        Check(!Journey.IsOpen(mod.State,"frontiers") && !Journey.IsOpen(mod.State,"calico") && !Journey.IsOpen(mod.State,"island")
             && mod.State.Sites.All(s=>!FrontierResearch.Cultures.Contains(s.Culture)),"loading all maps never unlocks unopened bus and boat routes");
         Capture(new JournalMenu(mod,"frontiers"),"frontier-locked-ru.png");
+        DigNormalRouteField(mod,"sea");mod.Restore("sea",false);
+        Check(mod.State.Restored.ContainsKey("clay_whistle") && RouteStories.Pending(mod.State)==null,"coastal find does not invent a route before transport is available");
         // Favor the locked cultures by solve count: the star forecast must still ignore them.
         foreach(string culture in new[]{"valley","dwarf","sea"})mod.Research.Progress(mod.State,culture).Solves=8;
         Game1.timeOfDay=2100;
@@ -131,10 +153,16 @@ public sealed partial class SmokeEntry : Mod
         mod.State.Stars.Lead=null;Game1.timeOfDay=1200;
         Game1.MasterPlayer.mailReceived.Add("ccVault");
         mod.SaveState();Call(mod,"LoadState");
+        Check(RouteStories.Pending(mod.State)?.Id=="calico" && !Journey.IsOpen(mod.State,"calico") && mod.State.Sites.All(s=>s.Culture!="calico"),"working bus and real whistle lead to Gunther before any desert site is created");
+        CheckDistantRoute(mod,"calico");
         Check(Journey.IsOpen(mod.State,"calico") && !Journey.IsOpen(mod.State,"island") && mod.State.Sites.Any(s=>s.Culture=="calico"&&s.Location=="Desert"),"bus access creates a desert site without unlocking the island");
         Check(mod.State.LastSiteDay==ModEntry.Today,"same-day upgrade creates the newly unlocked site without waiting overnight");
         Game1.MasterPlayer.mailReceived.Add("willyBoatFixed");
-        Check((bool)Call(mod,"RefreshFrontiers")!,"actual boat completion flag opens island research");Call(mod,"RefreshSites",true);
+        // Prepare the named second coastal artifact only in this unsaved test world.
+        var shore=mod.Research.Progress(mod.State,"sea");shore.Project="sailor_buckle";shore.Fragments=24;mod.Restore("sea",false);
+        Call(mod,"RefreshFrontiers");mod.SaveState();
+        Check(RouteStories.Pending(mod.State)?.Id=="island" && !Journey.IsOpen(mod.State,"island"),"actual boat access and restored buckle record an island clue before fieldwork");
+        CheckDistantRoute(mod,"island");
         Check(mod.State.Sites.Any(s=>s.Culture=="island"&&new[]{"IslandSouth","IslandEast"}.Contains(s.Location)),"island site uses an accessible first-visit map");
         var hoe=Game1.player.Items.OfType<Hoe>().First();
         foreach(string culture in FrontierResearch.Cultures)
@@ -257,7 +285,7 @@ public sealed partial class SmokeEntry : Mod
     }
     private static Dictionary<string,Rectangle> ButtonsOf(JournalMenu menu)=>Field<Dictionary<string,Rectangle>>(menu,"buttons");
     private static void Click(JournalMenu menu,string id){var rect=ButtonsOf(menu)[id];menu.receiveLeftClick(rect.Center.X,rect.Center.Y);}
-    private void Capture(JournalMenu menu,string name,int width=0,int height=0)
+    private void Capture(StardewValley.Menus.IClickableMenu menu,string name,int width=0,int height=0)
     {
         width=width==0?Game1.uiViewport.Width:width;height=height==0?Game1.uiViewport.Height:height;
         var device=Game1.graphics.GraphicsDevice;using var target=new RenderTarget2D(device,width,height);
@@ -265,6 +293,9 @@ public sealed partial class SmokeEntry : Mod
         Game1.spriteBatch.Begin(SpriteSortMode.Deferred,BlendState.AlphaBlend,SamplerState.PointClamp);
         menu.draw(Game1.spriteBatch);Game1.spriteBatch.End();device.SetRenderTarget(null);
         using var file=File.Create(Path.Combine(Out,name));target.SaveAsPng(file,width,height);
+        target.Dispose();
+        // The whole visual suite runs in one update: release large PNG buffers between batches.
+        if (++captures % 4 == 0) { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); }
     }
     private void CaptureField(ModEntry mod,DigPoint point)
     {

@@ -12,12 +12,12 @@ public sealed partial class ModEntry
         var date = Game1.Date;
         NaturalEvents.Observe(State.Nature, Today, date.Year, date.SeasonIndex, date.DayOfMonth, farm.IsSnowingHere(),
             farm.resourceClumps.Where(p => p.parentSheetIndex.Value == 622).Select(p => new GridPoint((int)p.Tile.X, (int)p.Tile.Y)),
-            Config.EnableNatureEvents && State.Journey.Started && State.Finds >= 6, Config.NatureSiteLifetimeDays);
+            Config.EnableNatureEvents && State.Journey.Started && !OpeningStory.Active(State) && State.Finds >= 6, Config.NatureSiteLifetimeDays);
     }
 
     private static bool InSiteArea(DigSite site, Vector2 tile)
         => (site.EventKind != "meteor" || NaturalEvents.WithinMeteorRadius(new((int)tile.X, (int)tile.Y), site.AnchorX, site.AnchorY))
-            && (site.EventKind != "resident_willy" || tile.X < Game1.getLocationFromName("Beach").Map.Layers[0].LayerWidth / 2);
+            && (site.EventKind is not ("resident_willy" or "expedition_tide_1") || tile.X < Game1.getLocationFromName("Beach").Map.Layers[0].LayerWidth / 2);
 
     private void RefreshNatureSites()
     {

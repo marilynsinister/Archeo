@@ -28,6 +28,7 @@ public sealed partial class ModEntry
 
     private void OnWorkshopFind(string culture)
     {
+        if (OpeningStory.Active(State)) return;
         string? found = Workshop.Find(State.Workshop, culture);
         if (found == null) return;
         Notify(T("workshop.found", new { name = T("workshop.part." + found) }));

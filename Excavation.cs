@@ -19,7 +19,11 @@ public sealed partial class ModEntry
         ["island"] = new[] { "IslandSouth", "IslandEast" }
     };
 
-    internal string LocationName(string name) => Game1.getLocationFromName(name)?.DisplayName ?? name;
+    internal string LocationName(string name)
+    {
+        var localized=Helper.Translation.Get("location."+name);
+        return localized.HasValue()?localized.ToString():Game1.getLocationFromName(name)?.DisplayName??name;
+    }
 
     private static bool BlockedByWorldStructures(GameLocation location, Vector2 tile)
     {
@@ -78,7 +82,14 @@ public sealed partial class ModEntry
         foreach (string culture in Core.Research.Cultures.Where(c => Core.Journey.IsOpen(State, c)))
         {
             Research.Project(State, culture, RandomFor("project:" + culture));
-            if (State.Sites.Any(p => p.Culture == culture && p.EventKind == "")) continue;
+            bool opening = OpeningStory.Active(State);
+            if (opening && (State.Opening.Stage != OpeningStage.Searching || FieldLearning.Ready(State, Research.Artifacts))) continue;
+            var existingSite = State.Sites.FirstOrDefault(p => p.Culture == culture && p.EventKind == "");
+            if (existingSite != null)
+            {
+                if (opening) { existingSite.EventId = OpeningStory.SiteKey; existingSite.Expires = int.MaxValue; }
+                continue;
+            }
             var random = RandomFor("site:" + culture);
             foreach (string locationName in SiteLocations[culture].OrderBy(_ => random.Next()))
             {
@@ -86,15 +97,17 @@ public sealed partial class ModEntry
                 // The railroad is physically closed before the summer earthquake.
                 if (location == null || locationName == "Railroad" && Game1.stats.DaysPlayed < 31) continue;
                 var tiles = ReachableTiles(location).Where(tile => !OccupiedByDigPoint(locationName, tile)).ToList();
-                if (tiles.Count < Config.FindsPerSite) continue;
+                int finds = opening ? OpeningStory.Finds : Config.FindsPerSite;
+                if (tiles.Count < finds) continue;
                 var anchor = tiles[random.Next(tiles.Count)];
                 var candidates = tiles.OrderBy(p => Vector2.DistanceSquared(p, anchor)).Take(90).OrderBy(_ => random.Next()).ToList();
-                var site = new DigSite { Location = locationName, Culture = culture, Expires = Today + Config.SiteLifetimeDays - 1 };
+                var site = new DigSite { Location = locationName, Culture = culture, Expires = opening ? int.MaxValue : Today + Config.SiteLifetimeDays - 1,
+                    EventId = opening ? OpeningStory.SiteKey : "" };
                 foreach (var tile in candidates)
                 {
                     if (site.Points.Any(p => Vector2.DistanceSquared(new Vector2(p.X, p.Y), tile) < 4)) continue;
                     site.Points.Add(new DigPoint { X = (int)tile.X, Y = (int)tile.Y });
-                    if (site.Points.Count == Config.FindsPerSite) break;
+                    if (site.Points.Count == finds) break;
                 }
                 if (site.Points.Count < 2) continue;
                 State.Sites.Add(site);
@@ -133,10 +146,11 @@ public sealed partial class ModEntry
         var found = FindSurveyTarget(location);
         if (found == null) { Notify(T("survey.no-site", new { key = Config.JournalKey.ToString() })); return; }
         var (site, point) = found.Value;
+        State.Learning.Events.Add("survey");
         var target = new Vector2(point.X, point.Y);
         float distance = Vector2.Distance(Game1.player.Tile, target);
         bool reveal = point.Revealed || RoutesFromPlayer(location).PathTo(new(point.X, point.Y)).Count - 1 <= Core.Journey.RevealRadius(State);
-        if (reveal) point.Revealed = true;
+        if (reveal) { point.Revealed = true; State.Learning.Events.Add("marked"); }
         signals.Value = new SurveySignal { Location = location.Name, SiteKey = site.Key, Target = target, Until = now + (reveal ? 180 : 20), Revealed = reveal, PulseUntil = now + 1.2 };
         RefreshSignalRoute(location, signals.Value);
         string distanceKey = reveal ? "here" : distance <= 7 ? "near" : distance <= 16 ? "medium" : "far";
@@ -182,13 +196,17 @@ public sealed partial class ModEntry
         ShowDigFeedback(site, point, amount);
         if (site.Points.All(p => p.Dug))
         {
-            Research.Progress(State, site.Culture).Keystones++;
-            Notify(T("message.site-complete"));
+            if (!OpeningStory.Active(State))
+            {
+                Research.Progress(State, site.Culture).Keystones++;
+                Notify(T("message.site-complete"));
+            }
             CompleteWeatherSite(site);
             CompleteShipwreckSite(site);
             CompleteStarSite(site);
             CompleteNatureSite(site);
             CompleteResidentSite(site);
+            CompleteExpeditionSite(site);
         }
         SaveState();
     }
@@ -201,7 +219,8 @@ public sealed partial class ModEntry
         string culture = location.Name.Contains("Beach", StringComparison.OrdinalIgnoreCase) || location.Name.StartsWith("Island") ? "sea"
             : location.Name.Contains("Mine", StringComparison.OrdinalIgnoreCase) || location.Name is "Mountain" or "Railroad" or "Desert" ? "dwarf" : "valley";
         culture = FrontierResearch.SpotCulture(location.Name,Core.Journey.IsOpen(State,"calico"),Core.Journey.IsOpen(State,"island"),culture);
-        AwardFragments(culture, RandomFor("vanilla:" + spot), true);
+        if (!RouteStories.AllowsField(State,culture)) culture = "valley";
+        AwardFragments(OpeningStory.Active(State) ? "valley" : culture, RandomFor("vanilla:" + spot), true);
         SaveState();
     }
 
@@ -210,11 +229,12 @@ public sealed partial class ModEntry
         var progress = Research.Progress(State, culture);
         int amount = Math.Max(1, (int)Math.Round((vanilla ? random.Next(2, 5) : random.Next(5, 10)) * Config.FragmentMultiplier));
         amount += Core.Research.Level(State.Experience) / 4 + Mastery.FragmentBonus(State);
+        if (OpeningStory.Active(State) && !vanilla) amount = Math.Max(amount, 5);
         progress.Fragments += amount;
         State.Finds++;
         State.Experience += vanilla ? 8 : 15;
-        if (random.NextDouble() < .12) { progress.Keystones++; Notify(T("message.keystone", new { culture = CultureName(culture) })); }
-        Notify(T("message.fragments", new { amount, culture = CultureName(culture) }));
+        if (!OpeningStory.Active(State) && random.NextDouble() < .12) { progress.Keystones++; Notify(T("message.keystone", new { culture = CultureName(culture) })); }
+        if (vanilla) Notify(T("message.fragments", new { amount, culture = CultureName(culture) }));
         Game1.playSound("coin");
         OnWorkshopFind(culture);
         return amount;

@@ -14,8 +14,16 @@ internal static class FrontierChecks
         var valley=research.Progress(state,"valley");valley.Fragments=200;
         research.Restore(state,"valley",false,new Random(5),out _);Journey.Refresh(state,catalog);
         check(!Journey.IsOpen(state,"calico"),"one restoration does not open frontier research");
+        check(OpeningStory.Conclude(state,true),"frontier progression follows the first story's conclusion"); Journey.Refresh(state,catalog);
         research.Restore(state,"valley",false,new Random(6),out _);Journey.Refresh(state,catalog);
-        check(FrontierResearch.Cultures.All(c=>Journey.IsOpen(state,c)) && Journey.IsOpen(state,"frontiers"),"two restorations open only routes that were actually observed");
+        check(!Journey.IsOpen(state,"sea") && FrontierResearch.Cultures.All(c=>!Journey.IsOpen(state,c)),"two restorations and working transport do not skip route stories");
+        research.Progress(state,"dwarf").Fragments=20;research.Restore(state,"dwarf",false,new Random(7),out _);Journey.Refresh(state,catalog);
+        RouteStories.Explain(state,"sea",true);Journey.Refresh(state,catalog);
+        research.Progress(state,"sea").Fragments=20;research.Restore(state,"sea",false,new Random(8),out _);Journey.Refresh(state,catalog);
+        check(RouteStories.Explain(state,"calico",true),"Gunther explains a desert route after a coastal find");Journey.Refresh(state,catalog);
+        state.Restored["sailor_buckle"]=1;Journey.Refresh(state,catalog);
+        check(RouteStories.Explain(state,"island",true),"Willy explains the island route after the marked buckle");Journey.Refresh(state,catalog);
+        check(FrontierResearch.Cultures.All(c=>Journey.IsOpen(state,c)) && Journey.IsOpen(state,"frontiers"),"distant fields require both real roads and explained finds");
         FrontierResearch.Observe(state,false,false);
         check(state.Frontiers.DesertAccess && state.Frontiers.IslandAccess,"observed routes never relock after a warp or reload");
 

@@ -33,6 +33,7 @@ public sealed partial class ModEntry
             var point = State.Sites.FirstOrDefault(p => p.Key == signal.SiteKey)?.Points.FirstOrDefault(p => p.X == signal.Target.X && p.Y == signal.Target.Y && !p.Dug);
             if (point == null) { signal.Until = 0; return; }
             point.Revealed = signal.Revealed = true;
+            State.Learning.Events.Add("marked");
             signal.Until = Game1.currentGameTime.TotalGameTime.TotalSeconds + 180;
             Game1.playSound("newArtifact");
             Notify(T("journey.marked"));
@@ -69,6 +70,10 @@ public sealed partial class ModEntry
     {
         digFeedback.Value.Add(new(site, new Vector2(point.X, point.Y), fragments, Game1.currentGameTime.TotalGameTime.TotalSeconds));
         Notify(T("journey.dug", new { amount = fragments, culture = CultureName(site.Culture), found = site.Points.Count(p => p.Dug), total = site.Points.Count }));
+        var progress = Research.Progress(State, site.Culture);
+        var project = Research.Project(State, site.Culture, RandomFor("project:" + site.Culture));
+        int cost = Core.Research.Required(project, progress, false, State);
+        Notify(T("learn.balance", new { name = ArtifactName(project), count = progress.Fragments, cost }));
         Game1.playSound("newArtifact");
     }
 

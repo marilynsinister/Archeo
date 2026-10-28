@@ -9,6 +9,7 @@ public sealed class ModConfig
     public KeybindList SurveyKey { get; set; } = new(SButton.K);
     public bool ShowHud { get; set; } = true;
     public bool ShowTrackedObjective { get; set; } = true;
+    public float JournalTextScale { get; set; } = 1f;
     public bool EnableVanillaSpotFragments { get; set; } = true;
     public int SiteLifetimeDays { get; set; } = 3;
     public int FindsPerSite { get; set; } = 4;
@@ -23,6 +24,7 @@ public sealed class ModConfig
     {
         JournalKey ??= new(new Keybind(SButton.O), new Keybind(SButton.ControllerBack));
         SurveyKey ??= new(SButton.K);
+        JournalTextScale = float.IsFinite(JournalTextScale) ? Math.Clamp(JournalTextScale, 1f, 1.3f) : 1f;
         SiteLifetimeDays = Math.Clamp(SiteLifetimeDays, 1, 14);
         FindsPerSite = Math.Clamp(FindsPerSite, 2, 8);
         FragmentMultiplier = float.IsFinite(FragmentMultiplier) ? Math.Clamp(FragmentMultiplier, .25f, 5f) : 1;
@@ -36,6 +38,6 @@ public sealed class ModConfig
         JournalKey = new(new Keybind(SButton.O), new Keybind(SButton.ControllerBack)); SurveyKey = new(SButton.K);
         ShowHud = ShowTrackedObjective = EnableVanillaSpotFragments = EnableWeatherEvents = EnableNatureEvents = true;
         SiteLifetimeDays = WeatherSiteLifetimeDays = 3; FindsPerSite = WeatherEventCooldownDays = 4;
-        FragmentMultiplier = 1; NatureSiteLifetimeDays = 5;
+        FragmentMultiplier = JournalTextScale = 1; NatureSiteLifetimeDays = 5;
     }
 }

@@ -8,7 +8,7 @@ namespace Archeo;
 public sealed partial class ModEntry
 {
     internal List<FieldObjective> FieldObjectives() => FieldJournal.Build(State,Research.Artifacts,Today,Config.EnableWeatherEvents,Config.EnableNatureEvents)
-        .Where(p => State.Journey.Started && (p.Culture == "" || Core.Journey.IsOpen(State, p.Culture))
+        .Where(p => State.Journey.Started && (p.Culture == "" || Core.Journey.IsOpen(State, p.Culture) || p.Kind==ObjectiveKind.Reward || p.Kind==ObjectiveKind.Dig && p.Topic!="")
             && (p.Tab == "overview" || Core.Journey.IsOpen(State, p.Tab))).ToList();
 
     internal string ObjectiveArtifact(FieldObjective goal)
@@ -29,8 +29,10 @@ public sealed partial class ModEntry
 
     internal string ObjectiveTopic(FieldObjective goal)
     {
+        if (goal.Topic == "opening") return T("opening.title");
         if (goal.Topic == "stars") return T("unusual.star-site");
         if (goal.Topic == "ship") return T("shipwreck.title");
+        if(PuzzleExpeditions.Kinds.Contains(goal.Topic))return ExpeditionTitle(PuzzleExpeditions.All.First(s=>goal.Topic==s.Kind(1)||goal.Topic==s.Kind(2)).Id);
         if (Shipwreck.Kinds.Contains(goal.Topic)) return T("shipwreck.site."+goal.Topic);
         if (NaturalEvents.Kinds.Contains(goal.Topic)) return T("nature.name."+goal.Topic);
         if (WeatherExpeditions.Kinds.Contains(goal.Topic)) return T("weather.name."+goal.Topic);
@@ -38,10 +40,10 @@ public sealed partial class ModEntry
         return resident != null ? T("residents.site."+resident.Id) : Core.Research.Cultures.Contains(goal.Culture) ? CultureName(goal.Culture) : T("journal.expeditions");
     }
 
-    internal string ObjectiveTitle(FieldObjective goal) => goal.Topic.StartsWith("museum_") ? T("museum.goal."+goal.Topic[7..],new{name=goal.Artifact.Length>0?T("museum.furniture."+goal.Artifact):""}) : goal.Kind switch
+    internal string ObjectiveTitle(FieldObjective goal) => goal.Topic.StartsWith("route:")?T("routes.title."+goal.Selection):goal.Topic.StartsWith("expedition:")?ExpeditionTitle(goal.Selection):goal.Topic.StartsWith("museum_") ? T("museum.goal."+goal.Topic[7..],new{name=goal.Artifact.Length>0?T("museum.furniture."+goal.Artifact):""}) : goal.Kind switch
     {
         ObjectiveKind.Reward => T("field.title.reward",new { name = ObjectiveArtifact(goal) }),
-        ObjectiveKind.Dig => ObjectiveTopic(goal),
+        ObjectiveKind.Dig => goal.Topic == "opening" ? T("opening.first-dig") : ObjectiveTopic(goal),
         ObjectiveKind.Talk => T("field.title.talk",new { name = ObjectiveNpc(goal) }),
         ObjectiveKind.Restore => T("field.title.restore",new { name = ObjectiveArtifact(goal) }),
         ObjectiveKind.Repair => T("field.title.repair"),
@@ -51,6 +53,7 @@ public sealed partial class ModEntry
 
     internal string ObjectiveStatus(FieldObjective goal)
     {
+        if(goal.Topic.StartsWith("expedition:"))return T("exp.status."+(int)PuzzleExpeditions.Stage(State.Expeditions,goal.Selection));
         if(goal.Topic=="museum_show")return T(goal.Kind==ObjectiveKind.Reward?"museum.show-ready":"museum.goal-status.show",new{count=goal.Remaining});
         if(goal.Topic=="museum_order")return T("museum.goal-status.order",new{days=goal.Expires-Today+1});
         if (goal.Kind == ObjectiveKind.Dig)
