@@ -292,7 +292,11 @@ public sealed partial class SmokeEntry : Mod
         device.SetRenderTarget(target);device.Clear(new Color(36,44,39));
         Game1.spriteBatch.Begin(SpriteSortMode.Deferred,BlendState.AlphaBlend,SamplerState.PointClamp);
         menu.draw(Game1.spriteBatch);Game1.spriteBatch.End();device.SetRenderTarget(null);
-        using var file=File.Create(Path.Combine(Out,name));target.SaveAsPng(file,width,height);
+        // Functional runs still draw every page, but can avoid the native PNG encoder's memory growth.
+        if (!File.Exists(Path.Combine(Helper.DirectoryPath,"no-screenshots.flag")))
+        {
+            using var file=File.Create(Path.Combine(Out,name));target.SaveAsPng(file,width,height);
+        }
         target.Dispose();
         // The whole visual suite runs in one update: release large PNG buffers between batches.
         if (++captures % 4 == 0) { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); }
@@ -308,6 +312,10 @@ public sealed partial class SmokeEntry : Mod
         Call(mod,"DrawFieldFeedback",Game1.spriteBatch);
         Call(mod,"DrawRevealedPoints",Game1.spriteBatch,Game1.currentGameTime.TotalGameTime.TotalSeconds);
         Game1.spriteBatch.End();device.SetRenderTarget(null);
-        using var file=File.Create(Path.Combine(Out,"journey-dig-feedback.png"));target.SaveAsPng(file,900,640);Game1.viewport=oldViewport;effects[0]=effect;
+        if (!File.Exists(Path.Combine(Helper.DirectoryPath,"no-screenshots.flag")))
+        {
+            using var file=File.Create(Path.Combine(Out,"journey-dig-feedback.png"));target.SaveAsPng(file,900,640);
+        }
+        Game1.viewport=oldViewport;effects[0]=effect;
     }
 }
