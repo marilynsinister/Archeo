@@ -25,9 +25,9 @@ internal sealed partial class JournalMenu : IClickableMenu
     private float fontScale;
     private float ReadingScale => mod.Config.JournalTextScale;
     private int ReadingLineHeight => (int)Math.Ceiling(Game1.smallFont.LineSpacing * ReadingScale) + 5;
-    private static readonly Color Ink = new(62, 52, 39);
-    private static readonly Color Muted = new(91, 79, 59);
-    private static readonly Color Paper = new(247, 235, 204);
+    private static readonly Color Ink = new(64, 51, 38);
+    private static readonly Color Muted = new(111, 94, 68);
+    private static readonly Color Paper = new(249, 239, 212);
     private string[] Tabs => mod.State.Journey.Started ? new[] { "overview", "catalog", "chapters", "equipment", "settings" } : new[] { "overview", "settings" };
 
     public JournalMenu(ModEntry mod, string initialTab = "overview") : base(0, 0, 100, 100, true)
@@ -106,10 +106,10 @@ internal sealed partial class JournalMenu : IClickableMenu
         buttons[id] = rect;
         if (!enabled) disabledButtons.Add(id);
         bool hovered = rect.Contains(Game1.getMouseX(), Game1.getMouseY());
-        Color color = !enabled ? new(222, 215, 195) : active ? new(194, 209, 178) : hovered ? new(236, 222, 183) : new(239, 226, 195);
-        b.Draw(Game1.staminaRect, rect, active ? new Color(91, 118, 91) : new Color(160, 142, 110));
-        b.Draw(Game1.staminaRect, new Rectangle(rect.X + 2, rect.Y + 2, rect.Width - 4, rect.Height - 4), color);
-        Center(b, label, rect, enabled ? Ink : Muted, Math.Min(fontScale, (rect.Width - 16f) / Math.Max(1, Game1.smallFont.MeasureString(label).X)));
+        bool indexTab = id.StartsWith("tab:");
+        DrawButtonSurface(b, rect, enabled, active, hovered, indexTab);
+        Color textColor = indexTab && active ? Paper : enabled ? Ink : Muted;
+        Center(b, label, rect, textColor, Math.Min(fontScale * (indexTab ? .94f : 1f), (rect.Width - 20f) / Math.Max(1, Game1.smallFont.MeasureString(label).X)));
     }
 
     public override void draw(SpriteBatch b)
@@ -117,19 +117,8 @@ internal sealed partial class JournalMenu : IClickableMenu
         if (tabBounds.Count != Tabs.Length) Layout();
         if (!AccessibleTab(tab)) tab = "overview";
         buttons.Clear(); disabledButtons.Clear(); maxScroll = 0;
-        b.Draw(Game1.fadeToBlackRect, new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height), Color.Black * .65f);
-        b.Draw(Game1.staminaRect, new Rectangle(xPositionOnScreen+10,yPositionOnScreen+12,width,height), Color.Black*.24f);
-        drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, height, Color.White);
-        b.Draw(Game1.staminaRect, new Rectangle(xPositionOnScreen + 16, yPositionOnScreen + 16, width - 32, height - 32), Paper);
-        b.Draw(Game1.staminaRect, new Rectangle(left.X,left.Y,left.Width,left.Height), new Color(242,229,194));
-        b.Draw(Game1.staminaRect, new Rectangle(right.X - 14, left.Y, 4, left.Height), new Color(209,191,154));
-        // Binding stitches and page edges keep the journal distinct from a standard inventory menu.
-        for (int y = left.Y + 10; y < left.Bottom; y += 23)
-            b.Draw(Game1.staminaRect, new Rectangle(right.X - 16, y, 8, 2), new Color(158, 117, 75));
-        b.Draw(mod.Atlas,new Vector2(xPositionOnScreen+34,yPositionOnScreen+29),Sprite(21),Color.White,0,Vector2.Zero,2.5f,SpriteEffects.None,1);
-        Text(b, mod.T("journey.book-title"), xPositionOnScreen + 86, yPositionOnScreen + 28, Ink, fontScale * 1.28f);
-        string counter = mod.T("journey.book-counter", new { count = mod.State.Restored.Count, level = Research.Level(mod.State.Experience) });
-        Text(b, counter, xPositionOnScreen + 88, yPositionOnScreen + 62, Muted, fontScale * .83f);
+        DrawBook(b);
+        DrawBookHeading(b);
         foreach (string key in Tabs)
             Button(b, "tab:" + key, mod.T("journey.nav."+key), tabBounds["tab:" + key], active: TabSection(tab) == key);
         if (TabSection(tab) != tab) Button(b,"book:back",mod.T("journey.back"),new Rectangle(xPositionOnScreen+width-174,yPositionOnScreen+47,138,28));
@@ -137,7 +126,7 @@ internal sealed partial class JournalMenu : IClickableMenu
         DrawControllerFocus(b);
         string footer = mod.T(controllerActive ? "journey.controller-footer" : "journey.footer");
         Text(b, footer, xPositionOnScreen + 34, yPositionOnScreen + height - 43, Muted, Math.Min(fontScale * .82f, (width - 68f) / Math.Max(1, Game1.smallFont.MeasureString(footer).X)));
-        upperRightCloseButton?.draw(b);
+        DrawBookCloseButton(b);
         drawMouse(b);
         if (hover != "") drawHoverText(b, hover, Game1.smallFont);
     }
@@ -187,12 +176,14 @@ internal sealed partial class JournalMenu : IClickableMenu
         bool pending = PendingArtifact(artifact.Id);
         bool known = restored || artifact.Id == project.Id || pending;
         int x = right.X + 16, w = right.Width - 32;
+        DrawSpecimenMount(b, new Rectangle(x, right.Y + 6, 74, 80), ModEntry.RarityColor(artifact.Rarity));
         b.Draw(mod.Atlas, new Vector2(x + 6, right.Y + 10), Sprite(artifact.Sprite), known ? Color.White : new Color(67, 55, 43), 0, Vector2.Zero, 4, SpriteEffects.None, 1);
         string title = known ? mod.ArtifactName(artifact) : mod.T("journal.unknown");
         int titleHeight = Wrap(title, w - 84, fontScale).Count() * (Game1.smallFont.LineSpacing + 4);
         Paragraph(b, title, new Rectangle(x + 84, right.Y + 10, w - 84, titleHeight), ModEntry.RarityColor(artifact.Rarity));
         int rarityY = right.Y + Math.Max(66, titleHeight + 14);
         Text(b, mod.T("rarity." + artifact.Rarity), x + 84, rarityY, ModEntry.RarityColor(artifact.Rarity), fontScale * .85f);
+        DrawPageRule(b, x + 84, rarityY + 31, w - 84);
         int actionY = right.Bottom - 48;
         int textTop = rarityY + 42;
         int textBottom = actionY - (artifact.Id == project.Id ? 94 : 14);

@@ -76,15 +76,18 @@ internal sealed partial class JournalMenu
     private void DrawArtifactRow(SpriteBatch b, ArtifactDefinition artifact, Rectangle rect, bool known)
     {
         Button(b, "artifact:" + artifact.Id, "", rect, active: selected == artifact.Id);
-        b.Draw(mod.Atlas, new Vector2(rect.X + 8, rect.Y + (rect.Height - 32) / 2), Sprite(artifact.Sprite), known ? Color.White : new Color(67, 55, 43), 0, Vector2.Zero, 2, SpriteEffects.None, 1);
+        var mount = new Rectangle(rect.X + 9, rect.Y + (rect.Height - 40) / 2, 40, 40);
+        DrawSpecimenMount(b, mount, known ? ModEntry.RarityColor(artifact.Rarity) : PageEdge);
+        b.Draw(mod.Atlas, new Vector2(mount.X + 4, mount.Y + 2), Sprite(artifact.Sprite), known ? Color.White : new Color(67, 55, 43), 0, Vector2.Zero, 2, SpriteEffects.None, 1);
         string name = known ? mod.ArtifactName(artifact) : mod.T("journal.unknown");
-        float scale = Math.Min(fontScale, (rect.Width - 61f) / Math.Max(1, Game1.smallFont.MeasureString(name).X));
-        Text(b, name, rect.X + 49, rect.Y + 3, known ? ModEntry.RarityColor(artifact.Rarity) : Muted, scale);
+        float scale = Math.Min(fontScale, (rect.Width - 69f) / Math.Max(1, Game1.smallFont.MeasureString(name).X));
+        Text(b, name, rect.X + 58, rect.Y + 4, known ? ModEntry.RarityColor(artifact.Rarity) : Muted, scale);
         bool restored = mod.State.Restored.ContainsKey(artifact.Id);
         string status = PendingArtifact(artifact.Id) ? mod.T("catalog.reward-ready") : restored && artifact.Effect is not ("" or "lamp") ? mod.RelicStatus(artifact)
             : mod.T(mod.State.Donated.Contains(artifact.Id) ? "journal.donated" : restored ? "journal.restored"
                 : mod.State.Cultures.Values.Any(p => p.Project == artifact.Id) ? "journal.current" : "journal.undiscovered");
-        Text(b, status, rect.X + 49, rect.Bottom - (int)(24 * fontScale), restored && artifact.Effect is not ("" or "lamp") && mod.RelicDaysUntilReady(artifact) == 0 ? new Color(56, 112, 57) : Muted, fontScale * .72f);
+        float statusScale = Math.Min(fontScale * .72f, (rect.Width - 69f) / Math.Max(1, Game1.smallFont.MeasureString(status).X));
+        Text(b, status, rect.X + 58, rect.Bottom - (int)(24 * fontScale), restored && artifact.Effect is not ("" or "lamp") && mod.RelicDaysUntilReady(artifact) == 0 ? new Color(56, 112, 57) : Muted, statusScale);
     }
 
     private void HandleCatalogClick(string id)

@@ -41,6 +41,11 @@ public sealed partial class SmokeEntry : Mod
             Game1.hasLoadedGame=true;Game1.gameMode=3;Move("Forest");
             typeof(Context).GetProperty("IsWorldReady")!.SetValue(null,true);
             Call(mod,"LoadState");
+            if (File.Exists(Path.Combine(Helper.DirectoryPath,"journal-appearance.flag")))
+            {
+                CheckJournalAppearance(mod);
+                File.WriteAllLines(Path.Combine(Out,"smoke-results.txt"),results);Game1.game1.Exit();return;
+            }
             Check(!mod.State.Journey.Started && mod.State.Sites.Count==0,"new world starts with an invitation and no active digs");
             Capture(new JournalMenu(mod),"journey-invitation-ru.png");
             Check(!mod.ClaimFieldKit() && !mod.State.Journey.Started,"kit requires Gunther's museum");
